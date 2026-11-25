@@ -1,0 +1,873 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Apple M5 Ultra Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 모델의 실측 기록.">
+<title>Mac AI 벤치마크</title>
+<style>
+:root {
+  color-scheme: light;
+  --page: #f3f5fa;
+  --paper: #fff;
+  --ink: #19233a;
+  --muted: #59667d;
+  --line: #dbe2ee;
+  --focus: #204ec7;
+  --blue: #3157c8;
+  --mono: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-family: -apple-system, BlinkMacSystemFont, "Apple SD Gothic Neo", system-ui, sans-serif;
+}
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--page); color: var(--ink); font-size: 1rem; line-height: 1.55; }
+a { color: inherit; }
+button, input { font: inherit; }
+button:focus-visible, input:focus-visible, summary:focus-visible, a:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+.shell { max-width: 1232px; width: calc(100% - 6rem); margin: auto; }
+.top { border-bottom: 1px solid var(--line); background: #fafbfe; }
+.top .shell { min-height: 3.85rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; }
+.brand { display: inline-flex; align-items: center; gap: .65rem; font-weight: 750; letter-spacing: -.025em; text-decoration: none; }
+.brand-icon { position: relative; width: 1.45rem; height: 1.05rem; border: 1.5px solid currentColor; border-radius: .22rem; }
+.brand-icon::before { content: ""; inset: .24rem; position: absolute; border: 1.5px solid currentColor; border-radius: .08rem; }
+.brand-icon::after { content: ""; position: absolute; width: .6rem; height: 1.5px; bottom: -.26rem; left: 50%; transform: translateX(-50%); background: currentColor; }
+.date { color: var(--muted); font-size: .875rem; font-variant-numeric: tabular-nums; }
+.hero { color: #f8faff; background: #121c38; }
+.hero .shell { position: relative; padding: 3.4rem 0 2.9rem; display: grid; grid-template-columns: minmax(0, 1.4fr) minmax(15rem, .8fr); align-items: end; gap: 2.7rem; isolation: isolate; }
+.hero .shell::after { content: ""; position: absolute; inset: 0 0 0 48%; z-index: -1; background: repeating-linear-gradient(127deg, transparent 0 18px, #91b4ff11 18px 19px), radial-gradient(ellipse at 75% 50%, #445fb766, transparent 68%); mask-image: linear-gradient(90deg, transparent, black 45%, black); }
+h1 { font-size: clamp(2.4rem, 6.6vw, 4.85rem); font-weight: 820; line-height: 1.07; letter-spacing: -.087em; margin: 0; }
+.hero p { color: #cbd8f6; margin: 1rem 0 0; }
+.specs { display: grid; grid-template-columns: 1fr 1fr; gap: .9rem 1.3rem; margin: 0; padding: .95rem 0 .2rem 1.4rem; border-left: 1px solid #99b1ed54; }
+.specs dt { color: #bfcdef; font-size: .875rem; }
+.specs dd { margin: .1rem 0 0; font-weight: 750; font-variant-numeric: tabular-nums; }
+.specs .chip { grid-column: 1 / -1; }
+.specs .chip dd { font-size: 1.32rem; }
+main { padding-block: 2rem 4.2rem; }
+.controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.1rem; }
+.filters { display: flex; gap: .3rem; border: 1px solid var(--line); background: #e9edf6; padding: .25rem; border-radius: .65rem; }
+.filters button { border: 1px solid transparent; background: transparent; border-radius: .43rem; color: #44526e; padding: .4rem .95rem; cursor: pointer; font-weight: 650; white-space: nowrap; }
+.filters button[aria-pressed="true"] { background: var(--paper); color: #173789; border-color: #d9e1f1; box-shadow: 0 1px 2px #132c5711; }
+.search { width: min(100%, 19.5rem); display: flex; align-items: center; gap: .65rem; border: 1px solid var(--line); background: var(--paper); border-radius: .58rem; padding: .44rem .78rem; }
+.search-icon { flex: 0 0 .84rem; width: .84rem; height: .84rem; border: 1.5px solid #64748e; border-radius: 50%; position: relative; }
+.search-icon::after { content: ""; position: absolute; background: #64748e; width: .36rem; height: 1.5px; top: .65rem; left: .6rem; transform: rotate(45deg); }
+.search input { color: var(--ink); border: 0; width: 100%; background: transparent; padding: .08rem .2rem; }
+.search input::placeholder { color: #596881; }
+.group { margin-top: 2.45rem; --accent: #345dd4; --tint: #eaf0ff; }
+.group[data-group="image"] { --accent: #5b42ae; --tint: #f0ebfc; }
+.group[data-group="video"] { --accent: #087263; --tint: #e4f5ef; }
+.group[data-group="other"] { --accent: #8a511b; --tint: #fbf0df; }
+.group-head { display: flex; gap: 1.1rem; justify-content: space-between; align-items: baseline; margin-bottom: .75rem; flex-wrap: wrap; }
+.group-head h2 { margin: 0; font-size: clamp(1.4rem, 4vw, 1.8rem); letter-spacing: -.055em; line-height: 1.2; }
+.group-head p { margin: 0; color: var(--muted); font-size: .875rem; }
+.card-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: .85rem; align-items: start; }
+.card { min-width: 0; background: var(--paper); border: 1px solid var(--line); border-top: 2px solid var(--accent); border-radius: .65rem; overflow: hidden; box-shadow: 0 3px 10px #20335a08; }
+.card-main { padding: 1.2rem 1.25rem 1rem; }
+.card-head { display: flex; gap: .6rem; align-items: start; justify-content: space-between; }
+.card-head h3 { font-size: 1.21rem; line-height: 1.28; margin: 0; font-weight: 760; letter-spacing: -.026em; overflow-wrap: anywhere; }
+.runtime { margin: .3rem 0 0; color: var(--muted); font-size: .875rem; }
+.parameters { margin: .3rem 0 0; font-size: .875rem; font-weight: 650; }
+.parameters span:first-child { color: var(--muted); font-weight: 500; }
+.status { flex-shrink: 0; display: inline-flex; align-items: center; padding: .16rem .49rem; border-radius: .35rem; background: var(--tint); color: var(--accent); font-size: .875rem; font-weight: 700; }
+.status.pending { background: #fff0d5; color: #754b10; }
+.metric { display: flex; flex-wrap: wrap; align-items: baseline; gap: .5rem; margin: .93rem 0 .12rem; }
+.metric-value { line-height: 1; font-weight: 805; letter-spacing: -.065em; font-size: clamp(1.87rem, 4vw, 2.58rem); font-variant-numeric: tabular-nums; }
+.metric-note { font-size: .875rem; color: var(--muted); }
+.primary-context { min-height: 1.4rem; color: #46556e; margin: .33rem 0 0; font-size: .9rem; }
+.sample { margin: .85rem 0 0; }
+.sample figcaption { color: var(--muted); font-size: .875rem; }
+.sample audio { display: block; width: 100%; margin-top: .28rem; }
+.scale { height: .25rem; border-radius: 1rem; background: var(--tint); margin-top: .85rem; overflow: hidden; }
+.scale span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
+.card details { padding: 0 1.25rem; border-top: 1px solid #e7ebf4; }
+summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070; padding: .66rem .1rem; }
+.measurements { margin: .08rem 0 .8rem; padding: 0; }
+.measurements div { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: .45rem 1rem; align-items: baseline; padding: .58rem 0; border-bottom: 1px solid #edf0f6; }
+.measurements dt { font-size: .875rem; }
+.measurements dd { margin: 0; font-size: .88rem; font-weight: 730; text-align: right; font-variant-numeric: tabular-nums; }
+.sources { font-size: .8125rem; overflow-wrap: anywhere; color: var(--muted); margin: 0 0 .95rem; }
+.comparison { margin-top: 1.25rem; border: 1px solid var(--line); border-radius: .65rem; background: var(--paper); }
+.comparison summary { padding: .85rem 1.2rem; font-size: 1rem; }
+.comparison-inner { padding: 0 1.2rem 1rem; }
+.comparison-inner p { margin: .15rem 0 .75rem; color: var(--muted); font-size: .875rem; }
+.table-scroll { overflow-x: auto; }
+.comparison table { border-collapse: collapse; width: 100%; min-width: 32rem; font-variant-numeric: tabular-nums; }
+.comparison th, .comparison td { padding: .58rem .7rem; text-align: right; border-bottom: 1px solid var(--line); }
+.comparison th:first-child { text-align: left; padding-left: 0; }
+.comparison thead th { color: var(--muted); font-size: .875rem; }
+.comparison td { font-weight: 720; }
+.comparison tbody th { font-size: .9rem; font-weight: 550; }
+.note { margin-top: 2.45rem; color: var(--muted); border-top: 1px solid var(--line); padding-top: 1rem; font-size: .875rem; }
+.note h2 { color: #354764; font-size: .98rem; margin: 0 0 .15rem; }
+.note p { margin: .16rem 0; }
+.empty { padding: 2rem; border: 1px dashed var(--line); border-radius: .65rem; color: var(--muted); margin-top: 2rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+[hidden] { display: none !important; }
+@media (max-width: 740px) {
+  .shell { width: calc(100% - 2.1rem); }
+  .hero .shell { grid-template-columns: 1fr; gap: 1.45rem; padding: 2.5rem 0 1.8rem; }
+  .specs { grid-template-columns: auto 1fr 1fr; padding: .9rem 0 0; border-left: 0; border-top: 1px solid #99b1ed54; }
+  .specs .chip { grid-column: auto; }
+  .specs .chip dd { font-size: 1rem; }
+  .card-grid { grid-template-columns: 1fr; }
+  .group { margin-top: 1.85rem; }
+}
+@media (max-width: 425px) {
+  .filters, .search { width: 100%; }
+  .filters button { flex: 1; padding-inline: .45rem; }
+  .card-head h3 { font-size: 1.12rem; }
+  .status { font-size: .81rem; }
+  .top .shell { min-height: 3.25rem; }
+}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="shell">
+    <a class="brand" href="./index.html"><span class="brand-icon" aria-hidden="true"></span>AI 성능 기록</a>
+    <time class="date" datetime="2026-11-25">2026.11.25</time>
+  </div>
+</header>
+<section class="hero" aria-labelledby="title">
+  <div class="shell">
+    <div>
+      <h1 id="title">Mac AI 벤치마크</h1>
+      <p>이 Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 모델의 실측 기록</p>
+    </div>
+    <dl class="specs">
+      <div class="chip"><dt>칩</dt><dd>Apple M5 Ultra</dd></div>
+      <div><dt>통합 메모리</dt><dd>256 GB</dd></div>
+      <div><dt>GPU</dt><dd>80코어</dd></div>
+    </dl>
+  </div>
+</section>
+<main class="shell">
+  <div class="controls">
+    <div class="filters" role="group" aria-label="모델 유형">
+      <button type="button" data-filter="all" aria-pressed="true">전체</button>
+      <button type="button" data-filter="text" aria-pressed="false">텍스트</button>
+      <button type="button" data-filter="image" aria-pressed="false">이미지</button>
+      <button type="button" data-filter="video" aria-pressed="false">비디오</button>
+      <button type="button" data-filter="other" aria-pressed="false">기타</button>
+    </div>
+    <label class="search">
+      <span class="search-icon" aria-hidden="true"></span>
+      <span class="sr-only">모델 검색</span>
+      <input id="search" type="search" placeholder="모델 검색" autocomplete="off">
+    </label>
+  </div>
+  <p id="results" class="sr-only" role="status" aria-live="polite"></p>
+  <div id="models"></div>
+  <template id="comparison-template">
+    <details class="comparison" open>
+      <summary></summary>
+      <div class="comparison-inner">
+        <p></p>
+        <div class="table-scroll" tabindex="0" role="region">
+          <table>
+            <thead><tr><th scope="col">측정 항목</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </details>
+  </template>
+  <p id="empty" class="empty" hidden>검색에 맞는 모델이 없습니다.</p>
+  <noscript><p class="empty">모델 기록을 보려면 JavaScript를 켜 주세요.</p></noscript>
+  <section class="note" aria-labelledby="metric-guide">
+    <h2 id="metric-guide">측정 기준</h2>
+    <p>텍스트의 출력 속도는 첫 토큰 이후의 디코딩 기준입니다. 입력 길이와 소프트웨어가 다른 기록은 각 카드에 조건을 표시했습니다.</p>
+    <p>이미지와 영상의 초 단위 수치는 해상도, 샘플링 단계, 모델 로딩과 파일 저장 포함 여부에 따라 달라집니다.</p>
+    <p>파라미터 1B는 10억 개입니다. 이미지와 비디오의 수치는 생성기(DiT) 기준이며 인코더와 VAE는 별도입니다.</p>
+  </section>
+</main>
+<template id="group-template">
+  <section class="group">
+    <div class="group-head"><h2></h2><p></p></div>
+    <div class="card-grid"></div>
+  </section>
+</template>
+<template id="card-template">
+  <article class="card">
+    <div class="card-main">
+      <div class="card-head"><div><h3></h3><p class="runtime"></p><p class="parameters"><span>파라미터</span> <span class="parameter-value"></span></p></div><span class="status"></span></div>
+      <p class="metric"><span class="metric-value"></span><span class="metric-note"></span></p>
+      <p class="primary-context"></p>
+      <div class="samples"></div>
+      <div class="scale" aria-hidden="true" hidden><span></span></div>
+    </div>
+    <details>
+      <summary>측정 조건과 기록</summary>
+      <dl class="measurements"></dl>
+      <p class="sources"><span class="parameter-note"></span> <a class="parameter-source" target="_blank" rel="noopener noreferrer">모델 출처</a></p>
+    </details>
+  </article>
+</template>
+<template id="sample-template">
+  <figure class="sample">
+    <figcaption></figcaption>
+    <audio controls preload="none"></audio>
+  </figure>
+</template>
+<script id="benchmarks" type="application/json">
+[
+  {
+    "id": "raon-1-mini-mlx",
+    "group": "text",
+    "model": "라온-1 미니 · Mac GPU",
+    "runtime": "MLX 0.32.4 · Metal · 공식 NVFP4",
+    "parameters": "28.8B 전체 · 활성 4.3B",
+    "parameterNote": "크래프톤의 Apple Silicon용 체크포인트입니다.",
+    "parameterSource": "https://huggingface.co/KRAFTON/Raon-1-mini-mlx/tree/558168046843bda49d46813b7e03ec3146c82ad4",
+    "metric": "111.15",
+    "unit": "토큰/초 · 9만 토큰 입력 후 디코딩",
+    "bar": 111.14679189540549,
+    "context": "M5 Ultra · SSD의 공식 NVFP4 · 입력 90,000토큰 · 출력 256토큰 · 재사용 캐시 0",
+    "rows": [
+      [
+        "90,000토큰 · 첫 응답까지",
+        "38.80초"
+      ],
+      [
+        "입력 처리 속도",
+        "2,322.85 토큰/초"
+      ],
+      [
+        "256토큰 생성까지 전체 시간",
+        "41.10초"
+      ],
+      [
+        "입력 처리 포함 출력 속도",
+        "6.23 토큰/초"
+      ],
+      [
+        "MLX 최대 할당량 · 9만 토큰",
+        "22.37 GB"
+      ],
+      [
+        "측정 조건",
+        "DeepSeek와 같은 한국어 소설과 지시문. 각 토크나이저로 입력 9만 토큰을 맞췄습니다. 워밍업 후 1회, temperature 0, 추론 꺼짐, 새 KV 캐시, DFlash2 꺼짐."
+      ],
+      [
+        "기존 21토큰 단문 · 3회 디코딩 중앙값",
+        "149.84 토큰/초"
+      ],
+      [
+        "단문 · 질문",
+        "대한민국의 수도는 어디인가요? 한 문장으로 답하세요."
+      ],
+      [
+        "단문 · 응답",
+        "대한민국의 수도는 서울입니다."
+      ],
+      [
+        "단문 · 출력 토큰 수 · 종료 토큰 포함",
+        "7 / 7 / 7"
+      ],
+      [
+        "단문 · 모델 로딩 · RAM 디스크",
+        "1.50초"
+      ],
+      [
+        "단문 · 첫 토큰까지 · 실행 순서",
+        "4.210 / 0.054 / 0.061초"
+      ],
+      [
+        "단문 · 첫 토큰 이후 디코딩",
+        "121.60 / 157.96 / 149.84 토큰/초"
+      ],
+      [
+        "단문 · 입력 처리 포함 전체 생성 시간",
+        "4.261 / 0.094 / 0.103초"
+      ],
+      [
+        "단문 · MLX 최대 할당량",
+        "18.30 GB"
+      ],
+      [
+        "단문 · 실행 조건",
+        "MLX-LM 0.32.2 · 모델 1회 로드 · 요청별 새 KV 캐시 · 추론 강도 none · 그리디 디코딩 · DFlash2 꺼짐"
+      ]
+    ],
+    "comparison": {
+      "shortDecode": 186.5405107790333,
+      "shortFirst": 0.18392783300078008,
+      "shortTotal": 1.5527634579921141,
+      "longDecode": 111.14679189540549,
+      "longFirst": 38.80244775000028,
+      "longTotal": 41.099354749996564
+    }
+  },
+  {
+    "id": "deepseek",
+    "parameters": "552B 백본 · 활성 8B / 16B",
+    "parameterNote": "입력 처리 시 8B, 출력 생성 시 16B 활성. Engram 196B 별도.",
+    "parameterSource": "https://huggingface.co/deepseek-ai/DeepSeek-V4.1-Flash",
+    "group": "text",
+    "model": "DeepSeek V4.1 Flash",
+    "runtime": "MLX-Serve · iQ 3.0 bpw",
+    "metric": "65.51",
+    "unit": "토큰/초 · 디코딩",
+    "bar": 65.51,
+    "context": "DeepSeek 단독 실행 · 입력 90,000토큰 · 출력 256토큰",
+    "rows": [
+      [
+        "90,000토큰 · 첫 토큰까지",
+        "23.57초"
+      ],
+      [
+        "90,000토큰 · 입력 처리",
+        "3,827.13 토큰/초"
+      ],
+      [
+        "90,000토큰 · 요청 전체",
+        "27.48초"
+      ],
+      [
+        "511토큰 · 출력 속도",
+        "65.98 토큰/초"
+      ],
+      [
+        "511토큰 · 첫 토큰 / 전체",
+        "0.46 / 4.34초"
+      ],
+      [
+        "이번 실행 조건",
+        "캐시 0토큰 · 생각 모드 끔 · 서버의 프롬프트 조회 디코딩 켜짐"
+      ],
+      [
+        "이전 긴 문맥 47회 · 출력 중앙값 / 범위",
+        "64.0 / 31.1~65.2 토큰/초"
+      ],
+      [
+        "입력 처리 속도 중앙값",
+        "2,564.9 토큰/초"
+      ],
+      [
+        "입력 92,366 / 출력 4,660인 실행",
+        "출력 56.5 토큰/초"
+      ],
+      [
+        "입력 30토큰 · 콜드 / 반복 테스트",
+        "13.08 / 82.31 토큰/초"
+      ]
+    ],
+    "comparison": {
+      "shortDecode": 65.98,
+      "shortFirst": 0.463,
+      "shortTotal": 4.344,
+      "longDecode": 65.51,
+      "longFirst": 23.572,
+      "longTotal": 27.48
+    }
+  },
+  {
+    "id": "inkling",
+    "parameters": "26.4B 전체 · 활성 3.4B",
+    "parameterNote": "레이어 반복을 포함하면 토큰당 가중치 활성화는 5.4B입니다.",
+    "parameterSource": "https://thinkingmachines.ai/model-card/inkling-2-mini/",
+    "group": "text",
+    "model": "Inkling 2 Mini",
+    "runtime": "MLX-VLM · Hermes 소설 작업",
+    "metric": "33.8",
+    "unit": "토큰/초 · 디코딩",
+    "bar": 33.8,
+    "context": "입력 91,735 토큰 · 캐시 없음",
+    "rows": [
+      [
+        "한국어 에이전트 작업 · 15회",
+        "15회 성공"
+      ],
+      [
+        "응답 파서 수정 후 재측정",
+        "성공 작업 중앙값 22.03초 (이전 23.06초). 109턴 중 최종 JSON 6건 복원, 빈 본문 8건."
+      ],
+      [
+        "입력 약 9만 토큰 · 6회",
+        "33.0~34.4 토큰/초"
+      ],
+      [
+        "첫 토큰까지",
+        "59.88초"
+      ],
+      [
+        "출력 159토큰 포함 요청 전체",
+        "64.64초"
+      ],
+      [
+        "전체 시간을 포함한 출력 속도",
+        "2.46 토큰/초"
+      ],
+      [
+        "입력 약 3.6천 토큰 · 출력 160~170토큰",
+        "40.1~41.0 토큰/초"
+      ]
+    ]
+  },
+  {
+    "id": "qwen27",
+    "parameters": "27B 언어 모델",
+    "parameterNote": "공식 언어 모델 파라미터 수이며 비전 인코더는 별도입니다.",
+    "parameterSource": "https://huggingface.co/Qwen/Qwen3.8-27B",
+    "group": "text",
+    "model": "Qwen3.8 27B",
+    "runtime": "MLX-Serve · Uncensored 8-bit",
+    "metric": "29.8",
+    "unit": "토큰/초 · 중앙값",
+    "bar": 29.8,
+    "context": "이미지 캡션 · 입력 106~171 토큰 · 11회",
+    "rows": [
+      [
+        "출력 속도 범위",
+        "27.7~31.5 토큰/초"
+      ],
+      [
+        "출력 124~140토큰 · 요청 전체",
+        "4.10~6.11초"
+      ],
+      [
+        "입력 캐시",
+        "11회 중 9회 사용"
+      ],
+      [
+        "긴 문맥",
+        "같은 조건의 실측 기록 없음"
+      ]
+    ]
+  },
+  {
+    "id": "qwen-flash-next",
+    "parameters": "125B 언어 모델 · 활성 6B",
+    "parameterNote": "N-gram 임베딩 51B와 다중 토큰 예측 모듈 4B는 별도입니다. 실측에 쓴 4-bit 체크포인트의 다운로드 크기는 약 111.5GB입니다.",
+    "parameterSource": "https://huggingface.co/Qwen/Qwen3.8-Flash-Next",
+    "group": "text",
+    "model": "Qwen3.8 Flash-Next",
+    "runtime": "MLX-VLM · 4-bit",
+    "metric": "41.35",
+    "unit": "토큰/초 · 디코딩",
+    "context": "입력 90,000토큰 · 캐시 없음 · 출력 256토큰",
+    "rows": [
+      [
+        "90,000토큰 · 첫 토큰까지",
+        "43.88초"
+      ],
+      [
+        "90,000토큰 · 입력 처리 속도",
+        "2,051.54 토큰/초"
+      ],
+      [
+        "90,000토큰 · 출력 256토큰 포함 전체",
+        "50.08초"
+      ],
+      [
+        "512토큰 · 출력 속도",
+        "60.8 토큰/초"
+      ],
+      [
+        "512토큰 · 첫 토큰 / 전체",
+        "0.35 / 4.57초"
+      ],
+      [
+        "90,000토큰 · MLX 최대 메모리",
+        "119.64 GB"
+      ]
+    ],
+    "bar": 41.35,
+    "comparison": {
+      "shortDecode": 60.8,
+      "shortFirst": 0.354,
+      "shortTotal": 4.567,
+      "longDecode": 41.35,
+      "longFirst": 43.875,
+      "longTotal": 50.079
+    }
+  },
+  {
+    "id": "h3-image",
+    "parameters": "약 20.11B · Pruned DiT",
+    "parameterNote": "실측에 쓴 Pruned INT8 체크포인트의 가중치와 편향을 집계했습니다.",
+    "parameterSource": "https://huggingface.co/Comfy-Org/MiniMax-H3-Image",
+    "group": "image",
+    "model": "MiniMax H3 Image",
+    "runtime": "H3 Image MLX · ComfyUI",
+    "metric": "15.53",
+    "unit": "초 · 512×512 생성",
+    "context": "512×512 이미지 1장 · 저장 포함 그래프 실행",
+    "rows": [
+      [
+        "512×512 생성 · 직접 MLX CLI",
+        "23.11초"
+      ],
+      [
+        "512×512 이미지 편집",
+        "25.08초"
+      ],
+      [
+        "1,024×1,024 생성 · 2회",
+        "21.00 / 21.44초"
+      ],
+      [
+        "4,096×2,304 생성",
+        "85.09초"
+      ],
+      [
+        "4,096×4,096 생성",
+        "145.03초"
+      ]
+    ]
+  },
+  {
+    "id": "moss",
+    "parameters": "약 5.08B · DiT",
+    "parameterNote": "MOSS-Image-Base 체크포인트의 생성기 기준입니다.",
+    "parameterSource": "https://huggingface.co/OpenMOSS-Team/MOSS-Image-Base",
+    "group": "image",
+    "model": "MOSS-Image-Base",
+    "runtime": "MLX 이미지 API · ComfyUI / MPS",
+    "metric": "10.59",
+    "unit": "초 · 512×512 API 요청",
+    "context": "512×512 이미지 1장 · API 응답까지",
+    "rows": [
+      [
+        "API 별도 요청 2회",
+        "57.10 / 57.58초"
+      ],
+      [
+        "ComfyUI 첫 이미지 요청",
+        "46.1초"
+      ],
+      [
+        "ComfyUI 후속 이미지 요청 · 3회",
+        "각 30.1초"
+      ],
+      [
+        "Qwen 캡션 포함 512×512 · 50단계",
+        "35.10초"
+      ]
+    ]
+  },
+  {
+    "id": "pi-h3",
+    "parameters": "20.11B · Pruned 기반 DiT",
+    "parameterNote": "실측에 쓴 Pruned MiniMax H3 기반 모델 기준입니다. pi-H3 2단계 어댑터는 별도입니다.",
+    "parameterSource": "https://huggingface.co/multimodalart/MiniMax-H3-Pruned/blob/main/README.md",
+    "group": "video",
+    "model": "pi-H3",
+    "runtime": "ComfyUI · PyTorch SDPA · 2단계 DWD",
+    "metric": "24.41",
+    "unit": "초 · MP4 저장까지",
+    "context": "864×480 · 5.17초 · 24fps · 스테레오 오디오",
+    "rows": [
+      [
+        "동일 프롬프트에서 시드 변경 · 2회",
+        "24.41 / 24.42초"
+      ],
+      [
+        "첫 실행 · 모델 로딩 포함",
+        "45.38초"
+      ],
+      [
+        "이전 PyTorch SDPA 기록 · 2회",
+        "25.84 / 26.09초"
+      ],
+      [
+        "이전 기본 Attention 기록 · 2회",
+        "36.51 / 43.31초"
+      ],
+      [
+        "DeepSeek 실행 중 · 같은 해상도에서 반복",
+        "70.72초"
+      ],
+      [
+        "DeepSeek 실행 중 · 512×288 두 번",
+        "91.08 / 98.90초"
+      ]
+    ]
+  },
+  {
+    "id": "longcat",
+    "parameters": "약 15.85B · DiT",
+    "parameterNote": "실측에 쓴 BF16 체크포인트의 DiT 가중치와 편향을 집계했습니다.",
+    "parameterSource": "https://huggingface.co/meituan-longcat/LongCat-Video-Avatar-1.6",
+    "group": "video",
+    "model": "LongCat Video Avatar 1.6",
+    "runtime": "MLX · BF16 · 이미지와 오디오로 아바타 생성",
+    "metric": "124.5",
+    "unit": "초 · 전체 실행",
+    "context": "592×480 · 3.52초 · 한국어 음성 · 8단계",
+    "rows": [
+      [
+        "영상 생성 구간",
+        "121.1초"
+      ],
+      [
+        "다른 입력으로 3.72초 영상 생성",
+        "130.1초 전체"
+      ],
+      [
+        "기록된 MLX 최대 메모리",
+        "43.5 GB"
+      ]
+    ]
+  },
+  {
+    "id": "ming-tts",
+    "group": "other",
+    "model": "Ming 3.0 TTS",
+    "parameters": "0.5B 체크포인트",
+    "parameterNote": "실행에 사용한 BF16 체크포인트 기준입니다.",
+    "parameterSource": "https://huggingface.co/inclusionAI/Ming-3.0-tts-0.5B",
+    "runtime": "mlx-audio · BF16 · 한국어 음성 생성",
+    "metric": "9.90",
+    "unit": "초 · 전체 생성 시간",
+    "context": "한국어 내레이션 58.58초 · 44.1 kHz · 모노",
+    "samples": [
+      {
+        "path": "./audio/ming-korean-one-minute.mp3",
+        "label": "비가 그친 아침 · 약 1분 한국어 내레이션"
+      },
+      {
+        "path": "./audio/ming-korean-voice.mp3",
+        "label": "짧은 한국어 테스트 · 2.80초"
+      }
+    ],
+    "rows": [
+      [
+        "긴 샘플의 입력",
+        "한국어 12문장 · 문장별 합성 후 연결"
+      ],
+      [
+        "긴 샘플 시간 측정 범위",
+        "모델 로딩부터 WAV 저장까지"
+      ],
+      [
+        "짧은 샘플의 입력",
+        "안녕하세요. 오늘은 한국어로 이야기해요."
+      ],
+      [
+        "짧은 샘플의 생성 시간",
+        "별도 측정 기록 없음"
+      ]
+    ]
+  },
+  {
+    "id": "yue2",
+    "group": "other",
+    "model": "YuE2-3B",
+    "parameters": "3B 생성 모델",
+    "parameterNote": "오디오 디코더 YuE2-Vae는 별도입니다.",
+    "parameterSource": "https://huggingface.co/m-a-p/YuE2-3B",
+    "runtime": "PyTorch · MPS · 노래 생성",
+    "metric": "46.90",
+    "unit": "초 · 전체 생성 시간",
+    "context": "After the Rain · 52.56초 · 48 kHz · 스테레오",
+    "samples": [
+      {
+        "path": "./audio/after-the-rain.mp3",
+        "label": "After the Rain"
+      }
+    ],
+    "rows": [
+      [
+        "악보 생성",
+        "9.72초"
+      ],
+      [
+        "오디오 토큰 생성",
+        "22.76초"
+      ],
+      [
+        "오디오 합성 · 32단계",
+        "7.77초"
+      ],
+      [
+        "오디오 디코더 로딩 및 디코딩",
+        "1.72초"
+      ]
+    ]
+  }
+]
+</script>
+<script>
+const models = JSON.parse(document.querySelector('#benchmarks').textContent);
+const labels = {
+  text: ['텍스트 모델', '출력 토큰/초 · 막대는 기록된 디코딩 수치'],
+  image: ['이미지 모델', '이미지 한 장의 생성 시간'],
+  video: ['비디오 모델', '클립 한 편의 생성 시간'],
+  other: ['기타', '음성 합성과 노래 생성'],
+};
+const container = document.querySelector('#models');
+const search = document.querySelector('#search');
+const buttons = [...document.querySelectorAll('[data-filter]')];
+const maxRate = Math.max(70, ...models.map(model => model.bar ?? 0));
+const requestedCategory = new URLSearchParams(location.search).get('section');
+let category = Object.hasOwn(labels, requestedCategory) ? requestedCategory : 'all';
+
+function renderCard(model) {
+  const card = document.querySelector('#card-template').content.cloneNode(true);
+  const heading = card.querySelector('h3');
+  heading.id = model.id;
+  heading.textContent = model.model;
+  card.querySelector('article').setAttribute('aria-labelledby', model.id);
+  card.querySelector('.runtime').textContent = model.runtime;
+  card.querySelector('.parameter-value').textContent = model.parameters;
+  card.querySelector('.parameter-note').textContent = model.parameterNote;
+  card.querySelector('.parameter-source').href = model.parameterSource;
+  const status = card.querySelector('.status');
+  status.textContent = model.pending ? '진행 중' : '실측';
+  status.classList.toggle('pending', Boolean(model.pending));
+  card.querySelector('.metric-value').textContent = model.metric;
+  card.querySelector('.metric-note').textContent = model.unit;
+  card.querySelector('.primary-context').textContent = model.context;
+  const samples = card.querySelector('.samples');
+  for (const { path, label } of model.samples ?? []) {
+    const sample = document.querySelector('#sample-template').content.cloneNode(true);
+    sample.querySelector('figcaption').textContent = label;
+    const audio = sample.querySelector('audio');
+    audio.src = path;
+    audio.setAttribute('aria-label', label);
+    samples.append(sample);
+  }
+  if (model.bar) {
+    const scale = card.querySelector('.scale');
+    scale.hidden = false;
+    scale.firstElementChild.style.width = (100 * model.bar / maxRate) + '%';
+  }
+  const measurements = card.querySelector('.measurements');
+  for (const [label, value] of model.rows) {
+    const row = document.createElement('div');
+    const term = document.createElement('dt');
+    const result = document.createElement('dd');
+    term.textContent = label;
+    result.textContent = value;
+    row.append(term, result);
+    measurements.append(row);
+  }
+  return card;
+}
+
+function renderComparison(title, description, modelIds, rows) {
+  const section = document.querySelector('#comparison-template').content.cloneNode(true);
+  section.querySelector('summary').textContent = title;
+  section.querySelector('.comparison-inner p').textContent = description;
+  section.querySelector('.table-scroll').setAttribute('aria-label', title);
+  const header = section.querySelector('thead tr');
+  for (const id of modelIds) {
+    const heading = document.createElement('th');
+    heading.scope = 'col';
+    heading.textContent = models.find(model => model.id === id).model;
+    header.append(heading);
+  }
+
+  const body = section.querySelector('tbody');
+  for (const [label, ...values] of rows) {
+    const row = document.createElement('tr');
+    const name = document.createElement('th');
+    name.scope = 'row';
+    name.textContent = label;
+    row.append(name);
+    for (const value of values) {
+      const cell = document.createElement('td');
+      cell.textContent = value;
+      row.append(cell);
+    }
+    body.append(row);
+  }
+  return section;
+}
+
+function renderPairedMeasurements(ids) {
+  const pairs = ids.map(id => models.find(model => model.id === id).comparison);
+  const metrics = [
+    ['약 512토큰 · 출력 속도', 'shortDecode', ' 토큰/초'],
+    ['약 512토큰 · 첫 토큰까지', 'shortFirst', '초'],
+    ['약 512토큰 · 요청 전체', 'shortTotal', '초'],
+    ['90,000토큰 · 출력 속도', 'longDecode', ' 토큰/초'],
+    ['90,000토큰 · 첫 토큰까지', 'longFirst', '초'],
+    ['90,000토큰 · 요청 전체', 'longTotal', '초'],
+  ];
+  const rows = metrics.map(([label, key, unit]) => [label, ...pairs.map(pair => pair[key].toFixed(2) + unit)]);
+  return renderComparison('한국어 소설 문맥 길이별 GPU 성능 비교',
+    '같은 한국어 소설과 지시문을 모델별 토크나이저로 잘라 입력 길이를 맞췄습니다. 요청 간 캐시 재사용 없이 256토큰 생성. DeepSeek는 MLX-Serve API, Flash-Next와 라온은 로컬 런타임 실측입니다. 라온의 디코딩 속도는 첫 토큰 이후 255토큰 기준입니다.',
+    ids, rows);
+}
+
+function renderQwenInkling() {
+  return renderComparison('Qwen3.8 27B와 Inkling 비교',
+    '이 Mac에서 남긴 기존 로그입니다. Qwen은 이미지 캡션, Inkling은 일반 응답과 헤르메스 소설 세션이어서 같은 작업의 속도 차이는 따로 확인해야 합니다.',
+    ['qwen27', 'inkling'], [
+      ['측정 환경', 'MLX-Serve · 8-bit', 'MLX-VLM · 로컬 API'],
+      ['짧은 입력 조건', '106~171토큰 · 11회', '3,584~3,591토큰 · 2회'],
+      ['출력 속도', '29.8토큰/초 중앙값', '40.1~41.0토큰/초'],
+      ['요청 전체', '4.10~6.11초', '7.69~8.88초'],
+      ['약 9만 입력 토큰 · 출력 속도', '해당 길이 기록 없음', '33.0~34.4토큰/초 · 6회'],
+    ]);
+}
+
+function render() {
+  const query = search.value.trim().toLocaleLowerCase();
+  const visible = models.filter(model => {
+    const matchesCategory = category === 'all' || model.group === category;
+    const fields = [model.model, model.runtime, model.parameters, model.context, labels[model.group][0]];
+    return matchesCategory && fields.some(value => value.toLocaleLowerCase().includes(query));
+  });
+  container.replaceChildren();
+  for (const [group, [title, description]] of Object.entries(labels)) {
+    const entries = visible.filter(model => model.group === group);
+    if (!entries.length) continue;
+    const section = document.querySelector('#group-template').content.cloneNode(true);
+    section.querySelector('section').dataset.group = group;
+    section.querySelector('section').setAttribute('aria-labelledby', 'group-' + group);
+    section.querySelector('h2').id = 'group-' + group;
+    section.querySelector('h2').textContent = title;
+    section.querySelector('.group-head p').textContent = description;
+    const grid = section.querySelector('.card-grid');
+    for (const entry of entries) grid.append(renderCard(entry));
+    if (group === 'text') {
+      const ids = new Set(entries.map(entry => entry.id));
+      const textGroup = section.querySelector('section');
+      if (ids.has('qwen27') && ids.has('inkling')) textGroup.append(renderQwenInkling());
+      const comparable = ['deepseek', 'raon-1-mini-mlx', 'qwen-flash-next'].filter(id => ids.has(id));
+      if (comparable.length >= 2) textGroup.append(renderPairedMeasurements(comparable));
+      if (ids.has('deepseek') && ids.has('inkling')) {
+        const coding = renderComparison('JavaScript 버그 수정 · 예약 점유 시간',
+          '2026.11.25 · 중첩 예약으로 점유 시간이 줄어드는 버그 1종. 같은 원본에서 모델별 3회, 매회 새 대화. 모델이 직접 코드를 수정하고 테스트를 실행했습니다. 첫 요청부터 완료 신호까지 측정했으며 서버 로딩과 독립 채점 시간은 제외했습니다.',
+          ['deepseek', 'inkling'], [["수정 성공", "3 / 3회", "3 / 3회"], ["공개 테스트 통과 수 (4개)", "4 · 4 · 4", "4 · 4 · 4"], ["비공개 테스트 통과 수 (9개)", "9 · 9 · 9", "9 · 9 · 9"], ["실행 순서별 시간", "3.14초 · 1.72초 · 1.71초", "14.67초 · 14.40초 · 14.41초"], ["완료 시간 중앙값", "1.72초", "14.41초"], ["실행 순서별 응답 턴", "4 · 4 · 4", "4 · 4 · 4"]]);
+        coding.querySelector('details').id = 'coding-bench';
+        textGroup.append(coding);
+      }
+      if (ids.has('raon-1-mini-mlx') && ids.has('deepseek')) {
+        const agents = renderComparison('한국어 에이전트 작업 성공률',
+          '2026.11.25 · 모의 사이트 관리 5종 × 입력 3세트. 공통 JSON 도구, 추론 끄기, 작업당 최대 14턴. 실제 문서 상태와 게시 확인으로 자동 채점했습니다. 시간은 성공한 작업 기준입니다. Inkling은 최종 JSON 응답 파서 수정 후 재측정했습니다.',
+          ['raon-1-mini-mlx', 'deepseek', 'inkling'], [["전체 성공", "10 / 15", "14 / 15", "15 / 15"], ["CPU 카드 제거", "3 / 3", "3 / 3", "3 / 3"], ["최신 성공 기록 반영", "1 / 3", "2 / 3", "3 / 3"], ["통계 보고서 작성", "0 / 3", "3 / 3", "3 / 3"], ["503 복구 후 게시 확인", "3 / 3", "3 / 3", "3 / 3"], ["조건 판단 및 상태 기록", "3 / 3", "3 / 3", "3 / 3"], ["성공 작업 시간 중앙값", "1.20초", "2.59초", "22.03초"]]);
+        agents.querySelector('details').id = 'agent-bench';
+        textGroup.append(agents);
+      }
+    }
+    container.append(section);
+  }
+  document.querySelector('#empty').hidden = visible.length !== 0;
+  document.querySelector('#results').textContent = visible.length + '개 모델';
+}
+function selectCategory(value) {
+  category = value;
+  for (const option of buttons) option.setAttribute('aria-pressed', String(option.dataset.filter === value));
+  render();
+}
+
+function revealLinkedModel() {
+  const heading = document.getElementById(location.hash.slice(1));
+  const details = heading?.closest('.card')?.querySelector('details');
+  if (!details) return;
+  details.open = true;
+  heading.scrollIntoView({ block: 'start' });
+}
+
+for (const button of buttons) {
+  button.addEventListener('click', () => selectCategory(button.dataset.filter));
+}
+search.addEventListener('input', render);
+window.addEventListener('hashchange', revealLinkedModel);
+selectCategory(category);
+if (location.hash) requestAnimationFrame(revealLinkedModel);
+</script>
+</body>
+</html>
