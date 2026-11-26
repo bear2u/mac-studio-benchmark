@@ -123,7 +123,7 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
 <header class="top">
   <div class="shell">
     <a class="brand" href="./index.html"><span class="brand-icon" aria-hidden="true"></span>AI 성능 기록</a>
-    <time class="date" datetime="2026-11-25">2026.11.25</time>
+    <time class="date" datetime="2026-11-26">2026.11.26</time>
   </div>
 </header>
 <section class="hero" aria-labelledby="title">
@@ -209,6 +209,57 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
 </template>
 <script id="benchmarks" type="application/json">
 [
+  {
+    "id": "bonsai",
+    "group": "text",
+    "model": "Ternary Bonsai 2.5 27B",
+    "parameters": "27B · 2비트 언어 가중치",
+    "parameterNote": "Mac용 MLX 배포본 8.88 GB. FP16 비전 인코더와 선택형 MTP 헤드를 포함합니다.",
+    "parameterSource": "https://huggingface.co/prism-ml/Ternary-Bonsai-2.5-27B-mlx-2bit",
+    "runtime": "PrismML 공식 로더 · MLX-VLM 0.6.3",
+    "metric": "41.33",
+    "unit": "토큰/초 · 디코딩",
+    "bar": 41.33,
+    "context": "입력 90,000토큰 · 출력 256토큰 · 한국어 소설",
+    "rows": [
+      [
+        "측정 조건",
+        "2026.11.26 · 온도 0 · 추론과 MTP 끔 · 속도는 예열 후 길이별 1회, 요청 간 캐시 재사용 없음"
+      ],
+      [
+        "512토큰 · 출력 속도 / 첫 토큰",
+        "58.61 토큰/초 · 0.37초"
+      ],
+      [
+        "90,000토큰 · 출력 속도 / 첫 토큰",
+        "41.33 토큰/초 · 187.22초"
+      ],
+      [
+        "90,000토큰 · 입력 처리 / MLX 최대 메모리",
+        "480.91 토큰/초 · 27.12 GB"
+      ],
+      [
+        "한국어 도구 작업 · 5종 × 3세트",
+        "11 / 15 성공 · 성공 작업 중앙값 3.86초"
+      ],
+      [
+        "도구 작업 실패 사례",
+        "통계 보고서 3회 모두 긴 문맥 성공 기록 3건을 4건으로 집계했습니다. 최신 기록 반영은 3회 중 2회 성공했습니다."
+      ],
+      [
+        "JavaScript 버그 수정 · 같은 문제 3회",
+        "3 / 3 성공 · 완료 시간 중앙값 2.30초"
+      ]
+    ],
+    "comparison": {
+      "shortDecode": 58.609,
+      "shortFirst": 0.3682,
+      "shortTotal": 4.7225,
+      "longDecode": 41.3305,
+      "longFirst": 187.2154,
+      "longTotal": 193.392
+    }
+  },
   {
     "id": "raon-1-mini-mlx",
     "group": "text",
@@ -786,7 +837,7 @@ function renderPairedMeasurements(ids) {
   ];
   const rows = metrics.map(([label, key, unit]) => [label, ...pairs.map(pair => pair[key].toFixed(2) + unit)]);
   return renderComparison('한국어 소설 문맥 길이별 GPU 성능 비교',
-    '같은 한국어 소설과 지시문을 모델별 토크나이저로 잘라 입력 길이를 맞췄습니다. 요청 간 캐시 재사용 없이 256토큰 생성. DeepSeek는 MLX-Serve API, Flash-Next와 라온은 로컬 런타임 실측입니다. 라온의 디코딩 속도는 첫 토큰 이후 255토큰 기준입니다.',
+    '같은 한국어 소설과 지시문을 모델별 토크나이저로 잘라 입력 길이를 맞췄습니다. 요청 간 캐시 재사용 없이 256토큰 생성. DeepSeek는 MLX-Serve API, Flash-Next·라온·Bonsai는 로컬 런타임 실측입니다. 라온과 Bonsai의 디코딩 속도는 첫 토큰 이후 255토큰 기준입니다.',
     ids, rows);
 }
 
@@ -825,19 +876,19 @@ function render() {
       const ids = new Set(entries.map(entry => entry.id));
       const textGroup = section.querySelector('section');
       if (ids.has('qwen27') && ids.has('inkling')) textGroup.append(renderQwenInkling());
-      const comparable = ['deepseek', 'raon-1-mini-mlx', 'qwen-flash-next'].filter(id => ids.has(id));
+      const comparable = ['deepseek', 'raon-1-mini-mlx', 'qwen-flash-next', 'bonsai'].filter(id => ids.has(id));
       if (comparable.length >= 2) textGroup.append(renderPairedMeasurements(comparable));
       if (ids.has('deepseek') && ids.has('inkling')) {
         const coding = renderComparison('JavaScript 버그 수정 · 예약 점유 시간',
-          '2026.11.25 · 중첩 예약으로 점유 시간이 줄어드는 버그 1종. 같은 원본에서 모델별 3회, 매회 새 대화. 모델이 직접 코드를 수정하고 테스트를 실행했습니다. 첫 요청부터 완료 신호까지 측정했으며 서버 로딩과 독립 채점 시간은 제외했습니다.',
-          ['deepseek', 'inkling'], [["수정 성공", "3 / 3회", "3 / 3회"], ["공개 테스트 통과 수 (4개)", "4 · 4 · 4", "4 · 4 · 4"], ["비공개 테스트 통과 수 (9개)", "9 · 9 · 9", "9 · 9 · 9"], ["실행 순서별 시간", "3.14초 · 1.72초 · 1.71초", "14.67초 · 14.40초 · 14.41초"], ["완료 시간 중앙값", "1.72초", "14.41초"], ["실행 순서별 응답 턴", "4 · 4 · 4", "4 · 4 · 4"]]);
+          '2026.11.25~26 · 중첩 예약으로 점유 시간이 줄어드는 버그 1종. 같은 원본에서 모델별 3회, 매회 새 대화. 모델이 직접 코드를 수정하고 테스트를 실행했습니다. 첫 요청부터 완료 신호까지 측정했으며 서버 로딩과 독립 채점 시간은 제외했습니다.',
+          ['deepseek', 'inkling', 'bonsai'], [["수정 성공", "3 / 3회", "3 / 3회", "3 / 3회"], ["공개 테스트 통과 수 (4개)", "4 · 4 · 4", "4 · 4 · 4", "4 · 4 · 4"], ["비공개 테스트 통과 수 (9개)", "9 · 9 · 9", "9 · 9 · 9", "9 · 9 · 9"], ["실행 순서별 시간", "3.14초 · 1.72초 · 1.71초", "14.67초 · 14.40초 · 14.41초", "2.29초 · 2.30초 · 2.30초"], ["완료 시간 중앙값", "1.72초", "14.41초", "2.30초"], ["실행 순서별 응답 턴", "4 · 4 · 4", "4 · 4 · 4", "4 · 4 · 4"]]);
         coding.querySelector('details').id = 'coding-bench';
         textGroup.append(coding);
       }
       if (ids.has('raon-1-mini-mlx') && ids.has('deepseek')) {
         const agents = renderComparison('한국어 에이전트 작업 성공률',
-          '2026.11.25 · 모의 사이트 관리 5종 × 입력 3세트. 공통 JSON 도구, 추론 끄기, 작업당 최대 14턴. 실제 문서 상태와 게시 확인으로 자동 채점했습니다. 시간은 성공한 작업 기준입니다. Inkling은 최종 JSON 응답 파서 수정 후 재측정했습니다.',
-          ['raon-1-mini-mlx', 'deepseek', 'inkling'], [["전체 성공", "10 / 15", "14 / 15", "15 / 15"], ["CPU 카드 제거", "3 / 3", "3 / 3", "3 / 3"], ["최신 성공 기록 반영", "1 / 3", "2 / 3", "3 / 3"], ["통계 보고서 작성", "0 / 3", "3 / 3", "3 / 3"], ["503 복구 후 게시 확인", "3 / 3", "3 / 3", "3 / 3"], ["조건 판단 및 상태 기록", "3 / 3", "3 / 3", "3 / 3"], ["성공 작업 시간 중앙값", "1.20초", "2.59초", "22.03초"]]);
+          '2026.11.25~26 · 모의 사이트 관리 5종 × 입력 3세트. 공통 JSON 도구, 추론 끄기, 작업당 최대 14턴. 실제 문서 상태와 게시 확인으로 자동 채점했습니다. 시간은 성공한 작업 기준입니다. Inkling은 최종 JSON 응답 파서 수정 후 재측정했습니다.',
+          ['raon-1-mini-mlx', 'deepseek', 'inkling', 'bonsai'], [["전체 성공", "10 / 15", "14 / 15", "15 / 15", "11 / 15"], ["CPU 카드 제거", "3 / 3", "3 / 3", "3 / 3", "3 / 3"], ["최신 성공 기록 반영", "1 / 3", "2 / 3", "3 / 3", "2 / 3"], ["통계 보고서 작성", "0 / 3", "3 / 3", "3 / 3", "0 / 3"], ["503 복구 후 게시 확인", "3 / 3", "3 / 3", "3 / 3", "3 / 3"], ["조건 판단 및 상태 기록", "3 / 3", "3 / 3", "3 / 3", "3 / 3"], ["성공 작업 시간 중앙값", "1.20초", "2.59초", "22.03초", "3.86초"]]);
         agents.querySelector('details').id = 'agent-bench';
         textGroup.append(agents);
       }
