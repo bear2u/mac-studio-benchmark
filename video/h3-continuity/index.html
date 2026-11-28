@@ -1,0 +1,112 @@
+<!doctype html><html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>H3로 끊김 없이 이어지는 긴 영상 만들기 · Mac AI 벤치마크</title>
+<meta name="description" content="MiniMax H3(TriPRISM)로 10초 안팎의 구간을 앞 구간의 마지막 22프레임과 소리에서 이어받아 1분 이상의 롱테이크를 만드는 방법.">
+<style>
+*{box-sizing:border-box}body{margin:0;color:#202b3d;background:white;font:1rem/1.75 -apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo",sans-serif;overflow-wrap:break-word}header{background:#f7f9fd;border-bottom:1px solid #dae1ec}header nav,main{max-width:52rem;margin:auto;padding:1rem 1.3rem}header nav{display:flex;justify-content:space-between;flex-wrap:wrap;gap:.5rem 1rem}a{color:#214b8b;text-underline-offset:.2em}a:focus-visible{outline:3px solid #336dcc;outline-offset:3px}main{padding-block:2rem 4rem}h1,h2,h3{line-height:1.3;word-break:keep-all;letter-spacing:-.04em}h1{font-size:clamp(1.85rem,5vw,3rem);margin:0}h2{margin:2.6rem 0 .8rem;font-size:1.6rem}h3{font-size:1.2rem;margin:1.7rem 0 .5rem}p{margin:.65rem 0}ul{padding-left:1.3rem;margin:.65rem 0}li{margin:.35rem 0}.note{font-size:.92rem;color:#46566b}table{width:100%;border-collapse:collapse;line-height:1.55;margin:1rem 0}th,td{text-align:left;vertical-align:top;padding:.65rem;border-bottom:1px solid #d5dfeb}th{background:#edf2f8}td:first-child{font-weight:600}code{font:.88em/1.5 ui-monospace,SFMono-Regular,Consolas,monospace;background:#eef2f8;border-radius:.25rem;padding:.08em .32em;overflow-wrap:anywhere}pre{background:#f2f5fa;border:1px solid #d5dfeb;border-radius:.4rem;padding:.9rem 1rem;overflow-x:auto;line-height:1.55;margin:1rem 0}pre code{background:none;padding:0;font-size:.85rem;overflow-wrap:normal;white-space:pre}.summary{background:#eef6f3;border-left:3px solid #087263;padding:.8rem 1rem;border-radius:0 .4rem .4rem 0;margin:1.2rem 0}.warn{background:#fff6e5;border-left:3px solid #b26b00;padding:.8rem 1rem;border-radius:0 .4rem .4rem 0;margin:1rem 0}.contents{display:flex;gap:.3rem 1rem;flex-wrap:wrap;border-block:1px solid #d5dfeb;padding:.75rem 0;margin:1.4rem 0}.contents a{font-size:.94rem}@media(max-width:32rem){th,td{padding:.45rem;font-size:.93rem}}@media print{header,.contents{display:none}h2,h3{break-after:avoid}pre,tr{break-inside:avoid}}
+</style></head><body><header><nav aria-label="문서 메뉴"><a href="../../?section=h3">← H3 패밀리</a></nav></header><main><h1>H3로 끊김 없이 이어지는 긴 영상 만들기</h1>
+<p class="note">MiniMax H3 · TriPRISM  |  ComfyUI 기본 노드만 사용  |  Mac 로컬 작업 가이드 · 2026.11.27 정리</p>
+<p>H3는 한 번에 5~15초만 만든다. 1분짜리 장면을 만들려면 10초 안팎의 구간 여러 개를 이어 붙여야 하는데, 그냥 붙이면 구간마다 인물 위치·조명·목소리가 튀어 컷이 바뀐 것처럼 보인다. 아래는 실제로 6구간(약 60초)을 한 테이크처럼 이어 만들며 확인한 방법이다.</p>
+<div class="summary"><strong>한 줄 요약</strong><br>구간마다 <strong>앞 구간의 마지막 22프레임과 그 소리를 그대로 이어받아 시작</strong>하게 하고, 겹친 22프레임은 잘라 낸 뒤 구간들을 이어 붙이면 한 테이크처럼 이어진다. 인물은 레퍼런스 이미지로 고정한다.</div>
+<nav class="contents" aria-label="문서 목차"><a href="#env">환경</a><a href="#ref">인물 고정</a><a href="#tail">구간 이어받기</a><a href="#join">이어 붙이기</a><a href="#numbers">숫자</a><a href="#prompt">프롬프트</a><a href="#script">대본 규칙</a><a href="#review">검수</a><a href="#pitfalls">주의할 것</a><a href="#open">아직 안 풀린 것</a></nav>
+
+<h2 id="env">환경</h2>
+<table><thead><tr><th scope="col">항목</th><th scope="col">값</th></tr></thead><tbody>
+<tr><td>ComfyUI</td><td>v0.46.0, 외부 커스텀 노드 없이 기본 노드만 사용</td></tr>
+<tr><td>영상 모델</td><td><code>Sulphur3_10ErosMax_SingularityV2_TriPRISM_TurboFusion_realism_bf16.safetensors</code></td></tr>
+<tr><td>텍스트 인코더</td><td><code>qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors</code> (type <code>minimax</code>)</td></tr>
+<tr><td>VAE</td><td><code>minimax_h3_video_vae_int8_convrot</code>, <code>minimax_h3_audio_vae_fp32</code></td></tr>
+<tr><td>샘플링</td><td>euler · simple · 8스텝 · <code>MiniMaxH3SigmaShift</code>(video 12, audio 3)</td></tr>
+<tr><td>대본·프롬프트 LLM</td><td>로컬 Qwen3.8-27B (MLX, OpenAI 호환 서버, <code>enable_thinking:false</code>)</td></tr>
+</tbody></table>
+
+<h2 id="ref">1  인물 고정: 레퍼런스 이미지</h2>
+<ul>
+<li>인물마다 사진 한 장을 먼저 만든다. 영상 모델로 576×1024, 5프레임(가장 짧은 길이)을 생성해 마지막 프레임을 저장한다. 장당 약 15초.</li>
+<li>프롬프트는 “plain light grey studio backdrop, waist up, neutral expression” 식의 무배경 정면 인물 사진으로 쓴다.</li>
+<li>구간을 만들 때 <code>MiniMaxH3ReferenceToVideo</code>의 <code>ref_images.ref_image_1</code>, <code>_2</code>…에 <code>LoadImage</code>로 연결한다. ComfyUI 출력 폴더의 파일은 <code>"하위폴더/파일.png [output]"</code> 이름으로 바로 불러올 수 있다.</li>
+<li>프롬프트에서는 연결 순서대로 <code>&lt;Picture 1&gt;</code>, <code>&lt;Picture 2&gt;</code>로 가리킨다: <code>the woman from &lt;Picture 1&gt;</code>. 그 구간에 나오는 인물의 사진만 연결하고, 얼굴·머리·옷은 글로 다시 묘사하지 않는다.</li>
+<li><code>ref_image_size</code>는 <code>match</code>. <code>max</code>는 몇 배 느리다.</li>
+<li>사람이 아니라 동물·사물 사진도 같은 방식으로 고정된다(펭귄 사진으로 2화까지 이어 만들어 인물 점수 9점 확인).</li>
+</ul>
+
+<h2 id="tail">2  구간 이어받기: 22프레임 + 소리</h2>
+<p>앞 구간을 만들 때 <strong>꼬리 파일</strong>을 따로 저장하고, 다음 구간이 그것을 0번 프레임에 고정해서 시작한다.</p>
+<pre><code>앞 구간:  VAEDecode ─ ImageFromBatch(끝 22프레임) ┐
+          VAEDecodeAudio ─ TrimAudioDuration(끝 22/24초) ┴ CreateVideo ─ SaveVideo(h264, re-encode, crf 4)  → 꼬리
+
+다음 구간: LoadVideo(꼬리) ─ GetVideoComponents ─ images, audio
+           MiniMaxH3AddGuide(positive, latent, vae, audio_vae, image, audio, frame_idx=0)
+             → BasicGuider의 conditioning으로 연결
+           디코딩 후 앞 22프레임과 그 구간의 소리를 잘라 내고 저장</code></pre>
+<ul>
+<li>22는 모델의 프레임 격자(17k+5)에 맞는 길이다. 처음에는 5프레임만, 소리 없이 넘겼는데 22프레임 + 소리로 바꾼 뒤에 이음매가 보이지 않게 됐다.</li>
+<li>꼬리는 화질 손실이 거의 없게(crf 4) 따로 저장한다. 본편 mp4에서 다시 뽑으면 압축이 거듭되며 화질이 깎인다.</li>
+<li>겹친 22프레임은 앞 구간의 끝과 똑같은 화면이므로 반드시 잘라 낸다. 안 자르면 경계에서 0.9초가 되풀이된다.</li>
+<li>다음 화(에피소드)의 첫 구간도 앞 화 마지막 구간의 꼬리에서 이어받으면 화 사이도 이어진다.</li>
+<li>중간 구간만 다시 만들 때는 앞 구간의 꼬리를 <code>frame_idx=0</code>에, <strong>뒤 구간의 첫 프레임</strong>을 <code>frame_idx=마지막</code>에 함께 고정한다. 양쪽 이음매가 모두 유지된다.</li>
+</ul>
+
+<h2 id="join">3  한 파일로 이어 붙이기</h2>
+<p><code>LoadVideo</code> 여러 개 → <code>ConcatenateVideo</code>(<code>videos.video0</code>, <code>video1</code>…, <code>codec: auto</code>) → <code>SaveVideo</code>. 같은 코덱이면 다시 인코딩하지 않아서 2~4초면 끝난다. ffmpeg가 없어도 된다.</p>
+
+<h2 id="numbers">숫자</h2>
+<table><thead><tr><th scope="col">항목</th><th scope="col">값</th></tr></thead><tbody>
+<tr><td>프레임 수</td><td>24fps, 반드시 17k+5 (124, 243, 260, 277, 362). 학습 범위 124~362</td></tr>
+<tr><td>구간 길이</td><td>260프레임 생성 → 첫 구간 260, 이후 238프레임(약 9.9초). 6구간 = 60.4초</td></tr>
+<tr><td>288×512, 243프레임</td><td>구간당 약 90초</td></tr>
+<tr><td>384×672, 260프레임</td><td>구간당 약 3분 15초, 한 화(6구간) 약 20분</td></tr>
+<tr><td>해상도</td><td>가로·세로 모두 32의 배수</td></tr>
+</tbody></table>
+
+<h3>API 형식에서 헷갈리는 입력 이름</h3>
+<ul>
+<li>늘어나는 입력: <code>ref_images.ref_image_1</code>(1부터), <code>videos.video0</code>(0부터). 시작 번호가 노드마다 다르다.</li>
+<li><code>SaveVideo</code>: <code>"format": "mp4", "format.codec": "h264"</code>. 화질 지정은 <code>"format.codec.encoding": "re-encode", "format.codec.encoding.crf": 4</code>.</li>
+<li><code>ImageFromBatch</code>의 <code>batch_index</code>는 음수 대신 실제 번호를 계산해서 준다.</li>
+<li><code>LoadImage</code>/<code>LoadVideo</code>에 출력 폴더 파일을 줄 때는 이름 뒤에 <code> [output]</code>.</li>
+<li>결과 파일은 <code>/history/&lt;id&gt;</code>의 <code>outputs[노드].images[]</code>에 영상도 함께 들어온다(<code>animated: [true]</code>).</li>
+</ul>
+
+<h2 id="prompt">프롬프트 형식</h2>
+<pre><code>integrated_multimodal_description: &lt;보이는 동작, 장소, 구도, 조명을 하나의 연속된 샷으로&gt;
+
+overall_soundscape: &lt;환경음&gt;</code></pre>
+<ul>
+<li>2구간부터는 <code>Continuing the same shot without a cut.</code>으로 시작하고 장소를 다시 설명하지 않는다.</li>
+<li>대사는 한국어 그대로 따옴표 안에 두고 화자와 언어를 밝힌다: <code>The man from &lt;Picture 2&gt; says in Korean, “오랜만이다.”</code></li>
+<li>LLM에게 한국어 장면을 이 형식으로 바꾸게 할 때 “~로 시작하라”고 시키면 섹션 제목을 빼먹는다. 시작 문구는 코드에서 직접 붙인다.</li>
+<li>기존 <code>QwenH3Prompt</code> 노드는 구간마다 16GB 모델을 새로 띄우므로 쓰지 않고, 이미 떠 있는 LLM 서버로 변환한다.</li>
+</ul>
+
+<h2 id="script">대본 규칙 (이어받기 때문에 생기는 제약)</h2>
+<ul>
+<li>전체를 한 장소에서 찍은 하나의 롱테이크로 쓴다. 구간 경계에서 장소·시간을 건너뛰면 앞 화면이 억지로 변형된다.</li>
+<li>각 구간은 앞 구간이 끝난 자세·위치·구도에서 출발한다.</li>
+<li>구간마다 짧은 대사 한 마디를 넣어 주고받게 한다. 대사가 없으면 드라마처럼 느껴지지 않는다.</li>
+<li>찢기, 던지기, 꺾기, 때리기, 넘어지기 같은 빠른 동작은 거의 그려지지 않는다(검수에서 장면 2~4점으로 반복 불합격). 다가서기, 돌아서기, 손잡기, 건네기, 시선 변화로 긴장을 만든다.</li>
+<li>LLM이 JSON 문자열 안에 곧은 큰따옴표로 대사를 쓰면 파싱이 깨진다. 둥근 따옴표 “ ”만 쓰게 한다.</li>
+</ul>
+
+<h2 id="review">검수</h2>
+<ul>
+<li>구간마다 프레임 5장(처음, 1/4, 중간, 3/4, 끝)을 PNG로 저장한다. 처음·중간·끝 3장을 레퍼런스 사진, 대본과 함께 비전 LLM에 보내 인물·장면·화질을 0~10점으로 받는다.</li>
+<li>화면이 노이즈로 깨졌는지는 5장을 따로 보내 “깨졌는가”만 묻는다. 종합 채점에 섞으면 가운데가 완전히 깨진 구간도 화질 8점을 받고 통과했다. 따로 물으면 잡아낸다.</li>
+<li>이음매는 구간 N의 끝 프레임과 N+1의 첫 프레임을 눈으로 비교한다.</li>
+<li>인물 점수는 레퍼런스를 쓴 뒤 전 구간 9점으로 안정적이었다. 불합격은 거의 “대본의 동작이 안 나옴”이었다.</li>
+<li><strong>프레임만 보므로 소리와 움직임은 검수하지 못한다.</strong> 목소리가 구간마다 같은지는 사람이 들어 봐야 한다.</li>
+</ul>
+
+<h2 id="pitfalls">해 봤는데 안 된 것, 주의할 것</h2>
+<div class="warn"><strong>어텐션 방식을 PyTorch로 고정해야 한다.</strong> ComfyUI를 Mac에서 옵션 없이 띄우면 “sub quadratic” 어텐션이 기본인데, 이 상태에서 <code>MiniMaxH3AddGuide</code>를 쓴 구간은 처음과 끝 프레임만 멀쩡하고 가운데 전체가 노이즈로 깨진다(가이드 없는 구간은 정상). 그래프의 모델 뒤에 <code>ModelAttentionBackend(attention: "pytorch attention")</code>을 넣으면 정상이고 구간당 시간도 줄었다(286초 → 203초). 처음엔 문제없다가 ComfyUI를 재시작한 뒤에 드러났다.</div>
+<ul>
+<li>구간 하나가 실패했는데 다음 구간을 계속 만들면 이어받을 꼬리가 없어 연속성이 깨진다. 실패하면 거기서 멈춘다.</li>
+<li>생성 작업을 웹 서버 프로세스 안에서 돌린다면, 서버가 재시작될 때 진행 중이던 구간이 끊긴다. ComfyUI 큐에는 작업이 남아 계속 돌 수 있으니 재시작 전에 큐를 확인한다.</li>
+<li><code>ComfyUI-H3-Continuum</code> 같은 외부 노드도 같은 원리(22프레임, 오디오 연속)지만 설치하지 않았다. 기본 노드로 충분했다.</li>
+</ul>
+
+<h2 id="open">아직 안 풀린 것</h2>
+<ul>
+<li>같은 인물의 목소리가 구간마다 같은지 확인하지 못했다. 음성 레퍼런스(<code>ref_audios</code>, <code>&lt;Audio n&gt;</code>)는 시도하지 않았다.</li>
+<li>한 장소 롱테이크만 가능하다. 클로즈업 교차 같은 컷 편집과 장소 이동은 이 방식으로는 못 한다.</li>
+<li>대본 검수가 가끔 실패해 처음 대본이 그대로 쓰인다(둥근 따옴표 규칙과 재시도 3회를 넣은 뒤로는 재발 여부 미확인).</li>
+</ul>
+<p class="note"><a href="../../?section=h3">H3 패밀리 실측 기록으로 돌아가기</a>     ·     <a href="../../?section=h3#h3-character-swap">TriPRISM 실측 기록</a></p></main></body></html>

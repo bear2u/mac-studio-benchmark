@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Apple M5 Ultra Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 및 소리 분리 모델의 실측 기록.">
+<meta name="description" content="Apple M5 Ultra Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 및 소리 분리, 이미지·영상 업스케일 모델의 실측 기록.">
 <title>Mac AI 벤치마크</title>
 <style>
 :root {
@@ -85,6 +85,8 @@ main { padding-block: 2rem 4.2rem; }
 #swap-result .sample { margin-top: 0; }
 .sample { margin: .85rem 0 0; }
 .sample figcaption { color: var(--muted); font-size: .875rem; }
+[aria-labelledby="kandinsky-video-sr"] .sample video { max-height: 32rem; }
+.sample img { display: block; max-width: 100%; max-height: 32rem; margin: .28rem auto 0; object-fit: contain; }
 .sample video { display: block; width: 100%; margin-top: .28rem; }
 .sample audio { display: block; width: 100%; margin-top: .28rem; }
 .scale { height: .25rem; border-radius: 1rem; background: var(--tint); margin-top: .85rem; overflow: hidden; }
@@ -129,6 +131,10 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
   .status { font-size: .81rem; }
   .top .shell { min-height: 3.25rem; }
 }
+.workflow-guide { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: .6rem 1rem; margin: .8rem 0 1rem; padding: .9rem 1.1rem; background: var(--paper); border: 1px solid var(--line); border-radius: .6rem; }
+.workflow-guide a { color: var(--accent); text-underline-offset: .17em; }
+.workflow-guide .workflow-title { font-weight: 750; }
+.workflow-guide p { margin: .16rem 0 0; color: var(--muted); font-size: .9rem; }
 </style>
 </head>
 <body>
@@ -142,7 +148,7 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
   <div class="shell">
     <div>
       <h1 id="title">Mac AI 벤치마크</h1>
-      <p>이 Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 및 소리 분리 모델의 실측 기록</p>
+      <p>이 Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 및 소리 분리, 이미지·영상 업스케일 모델의 실측 기록</p>
     </div>
     <dl class="specs">
       <div class="chip"><dt>칩</dt><dd>Apple M5 Ultra</dd></div>
@@ -158,6 +164,7 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
       <button type="button" data-filter="text" aria-pressed="false">텍스트</button>
       <button type="button" data-filter="image" aria-pressed="false">이미지</button>
       <button type="button" data-filter="video" aria-pressed="false">비디오</button>
+      <button type="button" data-filter="upscale" aria-pressed="false">업스케일</button>
       <button type="button" data-filter="h3" aria-pressed="false">H3 패밀리</button>
       <button type="button" data-filter="other" aria-pressed="false">기타</button>
     </div>
@@ -170,7 +177,7 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
   <nav class="jumps" aria-label="섹션 바로가기">
     <span>바로가기</span>
     <a href="#group-text">텍스트</a><a href="#group-image">이미지</a>
-    <a href="#group-video">비디오</a><a href="?section=h3">H3 패밀리</a><a href="#group-other">기타</a><a href="#metric-guide">측정 기준</a>
+    <a href="#group-video">비디오</a><a href="#group-upscale">업스케일</a><a href="?section=h3">H3 패밀리</a><a href="#group-other">기타</a><a href="#metric-guide">측정 기준</a>
   </nav>
   <p id="results" class="sr-only" role="status" aria-live="polite"></p>
   <div id="models"></div>
@@ -197,6 +204,27 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
     <p>파라미터 1B는 10억 개입니다. 이미지와 비디오의 수치는 생성기(DiT) 기준이며 인코더와 VAE는 별도입니다.</p>
   </section>
 </main>
+<template id="upscale-workflow">
+  <aside class="workflow-guide" aria-label="Kandinsky SR 업스케일 문서">
+    <div><a class="workflow-title" href="upscale/kandinsky-sr/index.html">Kandinsky SR 2.0 로컬 설치와 이미지·영상 업스케일 가이드</a>
+    <p>Mac 설치 명령, 이미지 2배 확대, 원음이 있는 영상 구간 복원과 화질 비교</p></div>
+    <a href="upscale/kandinsky-sr/Kandinsky-SR-2.0.docx" download="Kandinsky SR 2.0 로컬 설치와 업스케일.docx" aria-label="Kandinsky SR 가이드 Word 다운로드">Word 다운로드</a>
+  </aside>
+  <aside class="workflow-guide" aria-label="캐릭터 스왑 작업 문서">
+    <div><a class="workflow-title" href="upscale/neon-swap/index.html">NEON 영상 캐릭터 스왑 가이드</a>
+    <p>세 사람의 참조 사진 연결부터 회전 장면의 짧은 머리 보정, 원음 동기화까지</p></div>
+    <a href="upscale/neon-swap/NEON-workflow.docx" download="NEON 영상 캐릭터 스왑 워크플로우.docx">Word 다운로드</a>
+  </aside>
+</template>
+<template id="h3-guides">
+  <section class="group" data-group="video" aria-labelledby="h3-guides-title">
+    <div class="group-head"><h2 id="h3-guides-title">가이드 문서</h2><p>H3로 직접 만들며 정리한 작업 방법</p></div>
+    <aside class="workflow-guide" aria-label="H3 이어 만들기 문서">
+      <div><a class="workflow-title" href="video/h3-continuity/index.html">H3로 끊김 없이 이어지는 긴 영상 만들기</a>
+      <p>앞 구간의 마지막 22프레임과 소리를 이어받아 10초 구간 6개를 60초 롱테이크로 잇는 방법, 레퍼런스 인물 고정, 검수와 주의할 점</p></div>
+    </aside>
+  </section>
+</template>
 <template id="group-template">
   <section class="group">
     <div class="group-head"><h2></h2><p></p></div>
@@ -938,6 +966,155 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
       "무손실 출력에서 0~3초와 7~10초의 PCM 샘플 일치. 사이트 재생본은 AAC."
     ]
   ]
+},
+{
+  "id": "kandinsky-image-sr",
+  "group": "upscale",
+  "model": "Kandinsky ImageSR 2.0",
+  "runtime": "PyTorch 2.15.0 · MPS · BF16",
+  "parameters": "4.53B",
+  "parameterNote": "로컬 가중치의 DiT 파라미터 수",
+  "parameterSource": "https://huggingface.co/kandinskylab/Kandinsky-ImageSR-2.0",
+  "metric": "0.96",
+  "unit": "초 / 이미지 1장",
+  "context": "2026.11.28 · 2× 복원 · 모델 로딩 후 같은 입력의 두 번째 실행",
+  "rows": [
+    [
+      "입력과 출력",
+      "캐릭터 기준 이미지 768×1024 → 입력 384×512 → 출력 768×1024"
+    ],
+    [
+      "실행 조건",
+      "배율 2× · 1스텝 · t=0.15 · 출력 타일 1024"
+    ],
+    [
+      "모델 로딩",
+      "4.58초 · 추론과 별도"
+    ],
+    [
+      "처리 시간",
+      "첫 실행 3.90초 · 같은 입력 두 번째 0.96초 · 파일 저장 제외"
+    ],
+    [
+      "RGB PSNR ↑",
+      "Kandinsky 33.83 dB · 바이큐빅 38.24 dB"
+    ],
+    [
+      "휘도 SSIM ↑",
+      "Kandinsky 0.9366 · 바이큐빅 0.9787"
+    ],
+    [
+      "비교 방법",
+      "Lanczos로 절반 크기 입력을 만들고, 같은 입력의 바이큐빅 2× 확대와 비교. RGB PSNR과 BT.709 휘도 SSIM(11×11, σ=1.5) 측정."
+    ],
+    [
+      "관찰",
+      "머리카락과 옷깃 윤곽이 선명해지고 피부 질감이 추가됐다. 두 지표는 바이큐빅이 높았다."
+    ],
+    [
+      "배포본",
+      "공식 가중치 7d5b5ed · 실행 코드 6c24057"
+    ],
+    [
+      "원래 크기 입력",
+      "1086×1448 → 2172×2896 · 첫 추론 11.41초"
+    ]
+  ],
+  "samples": [
+    {
+      "kind": "image",
+      "path": "upscale/image-comparison.png",
+      "label": "얼굴 원본 크기 비교 · 왼쪽부터 바이큐빅, Kandinsky, 기준 이미지"
+    },
+    {
+      "kind": "image",
+      "path": "upscale/image-sr.png",
+      "label": "Kandinsky로 2배 확대한 전체 이미지"
+    },
+    {
+      "kind": "image",
+      "path": "upscale/character-2172x2896.png",
+      "label": "원본 캐릭터 사진을 직접 2배 확대한 결과 · 2172×2896"
+    }
+  ]
+},
+{
+  "id": "kandinsky-video-sr",
+  "group": "upscale",
+  "model": "Kandinsky VSR 2.0 · Distilled",
+  "runtime": "PyTorch 2.15.0 · MPS · BF16",
+  "parameters": "1.41B",
+  "parameterNote": "로컬 가중치의 DiT 파라미터 수",
+  "parameterSource": "https://huggingface.co/kandinskylab/Kandinsky-6.0-VSR-2.0-distilled2steps-Diffusers",
+  "metric": "27.62",
+  "unit": "초 / 25프레임",
+  "context": "2026.11.28 · 2× 복원 · 모델 로딩 후 같은 입력의 두 번째 실행",
+  "rows": [
+    [
+      "입력과 출력",
+      "6.00초부터 24 fps로 추출한 25프레임. 중앙을 2:3으로 잘라 512×768 기준 영상을 만든 뒤 256×384로 축소해 입력"
+    ],
+    [
+      "실행 조건",
+      "배율 2× · PiFlow 2스텝 · 시드 42 · 학습된 2× 잠재 업스케일러 · 25프레임 동시 처리"
+    ],
+    [
+      "모델 로딩",
+      "10.78초 · 추론과 별도"
+    ],
+    [
+      "처리 시간",
+      "첫 실행 29.18초 · 같은 입력 두 번째 27.62초 · 파일 저장 제외"
+    ],
+    [
+      "RGB PSNR ↑",
+      "Kandinsky 23.80 dB · 바이큐빅 39.78 dB"
+    ],
+    [
+      "휘도 SSIM ↑",
+      "Kandinsky 0.8585 · 바이큐빅 0.9891"
+    ],
+    [
+      "비교 방법",
+      "Lanczos로 절반 크기 입력을 만들고, 같은 입력의 바이큐빅 2× 확대와 비교. RGB PSNR과 BT.709 휘도 SSIM(11×11, σ=1.5) 측정. 미리보기 인코딩 전 25개 프레임 점수의 산술평균."
+    ],
+    [
+      "관찰",
+      "짧은 머리카락과 의상선이 또렷해진 반면, 세 인물의 눈매와 입 모양이 원본에서 달라졌다. 두 원본 일치도 지표는 바이큐빅이 높았다."
+    ],
+    [
+      "배포본",
+      "공식 가중치 97dec7e · 실행 코드 2c9f25d"
+    ],
+    [
+      "Mac 실행 경로",
+      "공식 VSR 가중치와 KVAE 사용. CUDA Flash/FlexAttention을 PyTorch SDPA로 교체하고 NABLA 블록 마스크를 적용했다."
+    ],
+    [
+      "원래 크기 입력",
+      "720×1280 → 1440×2560 · 25프레임 · 추론 421.02초 · 원음 포함. 이 구간에는 고해상도 정답 영상이 없어 PSNR·SSIM은 위의 축소 복원 실험에만 적용했다."
+    ]
+  ],
+  "samples": [
+    {
+      "kind": "video",
+      "path": "upscale/video-comparison.mp4",
+      "label": "같은 시점 비교 · 왼쪽부터 바이큐빅, Kandinsky, 기준 영상",
+      "poster": "upscale/video-poster.jpg"
+    },
+    {
+      "kind": "video",
+      "path": "upscale/video-sr.mp4",
+      "label": "Kandinsky 2배 복원 · 512×768 · 24 fps · 25프레임",
+      "poster": "upscale/video-sr-poster.jpg"
+    },
+    {
+      "kind": "video",
+      "path": "upscale/NEON-1440x2560-2x.mp4",
+      "label": "원래 화면 전체 2× · 1440×2560 · 6초부터 약 1초 · 원음 포함",
+      "poster": "upscale/native-poster.jpg"
+    }
+  ]
 }
 ]
 </script>
@@ -947,6 +1124,7 @@ const labels = {
   text: ['텍스트 모델', '출력 토큰/초 · 막대는 기록된 디코딩 수치'],
   image: ['이미지 모델', '이미지 한 장의 생성 시간'],
   video: ['비디오 모델', '클립 한 편의 생성 시간'],
+  upscale: ['업스케일', '같은 입력의 2배 복원 시간과 원본 대비 화질'],
   other: ['기타', '음성 합성, 노래 생성, 소리 분리'],
 };
 // Each family entry links to its measured run in the existing benchmark catalog.
@@ -1011,14 +1189,23 @@ function renderCard(model, swapHostId) {
     link.textContent = '스왑 최종 결과 영상 보기';
     samples.append(link);
   }
-  for (const { path, label, kind } of model.samples ?? []) {
+  for (const { path, label, kind, poster } of model.samples ?? []) {
     const sample = document.querySelector('#sample-template').content.cloneNode(true);
     sample.querySelector('figcaption').textContent = label;
     const audio = sample.querySelector('audio');
-    const media = kind === 'video' ? document.createElement('video') : audio;
+    const media = ['video', 'image'].includes(kind) ? document.createElement(kind === 'image' ? 'img' : 'video') : audio;
+    if (kind === 'image') {
+      const link = document.createElement('a');
+      link.href = path;
+      media.loading = 'lazy';
+      media.alt = label;
+      link.append(media);
+      audio.replaceWith(link);
+    }
     if (kind === 'video') {
       media.controls = true;
       media.playsInline = true;
+      if (poster) media.poster = poster;
       media.preload = 'metadata';
       audio.replaceWith(media);
     }
@@ -1105,10 +1292,16 @@ function renderQwenInkling() {
     ]);
 }
 
+// H3 패밀리 탭 맨 위에 보여 주는 작업 가이드 문서. 검색어가 있으면 제목·설명에 맞을 때만 보인다.
+const h3Guides = ['H3로 끊김 없이 이어지는 긴 영상 만들기 이어 만들기 롱테이크 22프레임 레퍼런스 가이드 문서'];
 function renderH3Family(query) {
   let count = 0;
   const records = new Set();
   container.replaceChildren();
+  if (!query || h3Guides.some(text => text.toLocaleLowerCase().includes(query))) {
+    container.append(document.querySelector('#h3-guides').content.cloneNode(true));
+    count += h3Guides.length;
+  }
   for (const [title, entries] of h3Family) {
     const matches = entries.filter(([name, description]) =>
       ('H3 패밀리 ' + title + ' ' + name + ' ' + description).toLocaleLowerCase().includes(query));
@@ -1181,6 +1374,9 @@ function render() {
     addPermalink(section.querySelector('h2'), 'group-' + group);
     section.querySelector('.group-head p').textContent = description;
     const grid = section.querySelector('.card-grid');
+    if (group === 'upscale' && !query) {
+      grid.before(document.querySelector('#upscale-workflow').content.cloneNode(true));
+    }
     for (const entry of entries) grid.append(renderCard(entry, swapHostId));
     if (group === 'text') {
       const ids = new Set(entries.map(entry => entry.id));
