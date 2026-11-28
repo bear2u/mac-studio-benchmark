@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Apple M5 Ultra Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 모델의 실측 기록.">
+<meta name="description" content="Apple M5 Ultra Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 및 소리 분리 모델의 실측 기록.">
 <title>Mac AI 벤치마크</title>
 <style>
 :root {
@@ -74,6 +74,7 @@ main { padding-block: 2rem 4.2rem; }
 .primary-context { min-height: 1.4rem; color: #46556e; margin: .33rem 0 0; font-size: .9rem; }
 .sample { margin: .85rem 0 0; }
 .sample figcaption { color: var(--muted); font-size: .875rem; }
+.sample video { display: block; width: 100%; margin-top: .28rem; }
 .sample audio { display: block; width: 100%; margin-top: .28rem; }
 .scale { height: .25rem; border-radius: 1rem; background: var(--tint); margin-top: .85rem; overflow: hidden; }
 .scale span { display: block; height: 100%; border-radius: inherit; background: var(--accent); }
@@ -123,14 +124,14 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
 <header class="top">
   <div class="shell">
     <a class="brand" href="./index.html"><span class="brand-icon" aria-hidden="true"></span>AI 성능 기록</a>
-    <time class="date" datetime="2026-11-26">2026.11.26</time>
+    <time class="date" datetime="2026-11-28">2026.11.28</time>
   </div>
 </header>
 <section class="hero" aria-labelledby="title">
   <div class="shell">
     <div>
       <h1 id="title">Mac AI 벤치마크</h1>
-      <p>이 Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 모델의 실측 기록</p>
+      <p>이 Mac에서 실행한 텍스트·이미지·영상·음성·노래 생성 및 소리 분리 모델의 실측 기록</p>
     </div>
     <dl class="specs">
       <div class="chip"><dt>칩</dt><dd>Apple M5 Ultra</dd></div>
@@ -734,7 +735,74 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
         "1.72초"
       ]
     ]
-  }
+  },
+{
+  "id": "sam-audio",
+  "group": "other",
+  "model": "Meta SAM-Audio Small · 효과음 제거",
+  "runtime": "AudioGhost e1691a3 · PyTorch 2.9 · CPU FP32",
+  "parameters": "714M · 로드된 모델 전체",
+  "parameterNote": "AudioGhost가 로드한 텍스트 인코더와 오디오 코덱을 포함한 파라미터 수입니다.",
+  "parameterSource": "https://github.com/0x0funky/audioghost-ai/tree/e1691a32dc595871079894efb296d42bfb985400",
+  "metric": "3.97",
+  "unit": "초 · 선택한 4초 구간 분리",
+  "context": "10초 H3 영상 · 시간 표시를 추가하자 ‘띠용’ 성분이 약 38 dB 감소",
+  "samples": [
+    {
+      "kind": "video",
+      "path": "video/sam-audio/before.mp4",
+      "label": "입력 · 4초, 5.5초, 8초에 같은 효과음"
+    },
+    {
+      "kind": "video",
+      "path": "video/sam-audio/after.mp4",
+      "label": "텍스트만 · 배경음 손실"
+    },
+    {
+      "kind": "video",
+      "path": "video/sam-audio/after-markers.mp4",
+      "label": "텍스트 + 시간 표시 · 8초 효과음 보존"
+    }
+  ],
+  "rows": [
+    [
+      "입력",
+      "로컬 MiniMax H3 계열 TriPrism · 512×288, 24 fps · 배경음에 합성 효과음 3회 추가 · 48 kHz 모노"
+    ],
+    [
+      "영어 프롬프트",
+      "a cartoon spring boing sound effect with a descending wobbling pitch"
+    ],
+    [
+      "처리 방식",
+      "3~7초만 분리한 뒤 residual을 원본에 삽입. 두 실행 모두 16스텝, 시드 42, 조건별 1회."
+    ],
+    [
+      "추가한 시간 표시",
+      "효과음 있음 4~5초 및 5.5~6.5초, 효과음 없음 3~3.9초"
+    ],
+    [
+      "효과음 성분 변화 · 텍스트만 / 시간 표시 추가",
+      "−0.85 / −38.00 dB · 배경과 효과음 원본 파형을 기준으로 최소제곱 추정"
+    ],
+    [
+      "배경만 있는 3~4초의 RMS 변화",
+      "−37.84 / −1.14 dB"
+    ],
+    [
+      "편집 구간 전체의 배경 원본 대비 오차 감소",
+      "−1.82 / +11.92 dB · 양수일수록 배경 원본에 가까움"
+    ],
+    [
+      "분리 시간 · 모델 로딩 별도",
+      "각각 3.97초 · 로딩 14.32 / 5.11초 · 다운로드와 파일 저장 제외"
+    ],
+    [
+      "구간 밖 보존",
+      "무손실 출력에서 0~3초와 7~10초의 PCM 샘플 일치. 사이트 재생본은 AAC."
+    ]
+  ]
+}
 ]
 </script>
 <script>
@@ -743,7 +811,7 @@ const labels = {
   text: ['텍스트 모델', '출력 토큰/초 · 막대는 기록된 디코딩 수치'],
   image: ['이미지 모델', '이미지 한 장의 생성 시간'],
   video: ['비디오 모델', '클립 한 편의 생성 시간'],
-  other: ['기타', '음성 합성과 노래 생성'],
+  other: ['기타', '음성 합성, 노래 생성, 소리 분리'],
 };
 const container = document.querySelector('#models');
 const search = document.querySelector('#search');
@@ -769,12 +837,19 @@ function renderCard(model) {
   card.querySelector('.metric-note').textContent = model.unit;
   card.querySelector('.primary-context').textContent = model.context;
   const samples = card.querySelector('.samples');
-  for (const { path, label } of model.samples ?? []) {
+  for (const { path, label, kind } of model.samples ?? []) {
     const sample = document.querySelector('#sample-template').content.cloneNode(true);
     sample.querySelector('figcaption').textContent = label;
     const audio = sample.querySelector('audio');
-    audio.src = path;
-    audio.setAttribute('aria-label', label);
+    const media = kind === 'video' ? document.createElement('video') : audio;
+    if (kind === 'video') {
+      media.controls = true;
+      media.playsInline = true;
+      media.preload = 'metadata';
+      audio.replaceWith(media);
+    }
+    media.src = path;
+    media.setAttribute('aria-label', label);
     samples.append(sample);
   }
   if (model.bar) {
