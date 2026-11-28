@@ -46,6 +46,10 @@ main { padding-block: 2rem 4.2rem; }
 .filters { display: flex; gap: .3rem; border: 1px solid var(--line); background: #e9edf6; padding: .25rem; border-radius: .65rem; }
 .filters button { border: 1px solid transparent; background: transparent; border-radius: .43rem; color: #44526e; padding: .4rem .95rem; cursor: pointer; font-weight: 650; white-space: nowrap; }
 .filters button[aria-pressed="true"] { background: var(--paper); color: #173789; border-color: #d9e1f1; box-shadow: 0 1px 2px #132c5711; }
+.jumps { display: flex; align-items: baseline; flex-wrap: wrap; gap: .35rem 1rem; margin-top: .85rem; font-size: .875rem; color: var(--muted); }
+.jumps a:hover, .permalink:hover { color: var(--focus); }
+.permalink { display: inline-block; padding-inline: .35em; font-size: .85em; color: var(--muted); text-decoration: none; }
+:target { scroll-margin-top: 1rem; }
 .search { width: min(100%, 19.5rem); display: flex; align-items: center; gap: .65rem; border: 1px solid var(--line); background: var(--paper); border-radius: .58rem; padding: .44rem .78rem; }
 .search-icon { flex: 0 0 .84rem; width: .84rem; height: .84rem; border: 1.5px solid #64748e; border-radius: 50%; position: relative; }
 .search-icon::after { content: ""; position: absolute; background: #64748e; width: .36rem; height: 1.5px; top: .65rem; left: .6rem; transform: rotate(45deg); }
@@ -155,6 +159,11 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
       <input id="search" type="search" placeholder="모델 검색" autocomplete="off">
     </label>
   </div>
+  <nav class="jumps" aria-label="섹션 바로가기">
+    <span>바로가기</span>
+    <a href="#group-text">텍스트</a><a href="#group-image">이미지</a>
+    <a href="#group-video">비디오</a><a href="#group-other">기타</a><a href="#metric-guide">측정 기준</a>
+  </nav>
   <p id="results" class="sr-only" role="status" aria-live="polite"></p>
   <div id="models"></div>
   <template id="comparison-template">
@@ -820,11 +829,21 @@ const maxRate = Math.max(70, ...models.map(model => model.bar ?? 0));
 const requestedCategory = new URLSearchParams(location.search).get('section');
 let category = Object.hasOwn(labels, requestedCategory) ? requestedCategory : 'all';
 
+function addPermalink(heading, id) {
+  const link = document.createElement('a');
+  link.className = 'permalink';
+  link.href = '#' + id;
+  link.setAttribute('aria-label', heading.textContent + ' 바로가기');
+  link.textContent = '#';
+  heading.append(link);
+}
+
 function renderCard(model) {
   const card = document.querySelector('#card-template').content.cloneNode(true);
   const heading = card.querySelector('h3');
   heading.id = model.id;
   heading.textContent = model.model;
+  addPermalink(heading, model.id);
   card.querySelector('article').setAttribute('aria-labelledby', model.id);
   card.querySelector('.runtime').textContent = model.runtime;
   card.querySelector('.parameter-value').textContent = model.parameters;
@@ -870,9 +889,12 @@ function renderCard(model) {
   return card;
 }
 
-function renderComparison(title, description, modelIds, rows) {
+function renderComparison(id, title, description, modelIds, rows) {
   const section = document.querySelector('#comparison-template').content.cloneNode(true);
-  section.querySelector('summary').textContent = title;
+  section.querySelector('details').id = id;
+  const summary = section.querySelector('summary');
+  summary.textContent = title;
+  addPermalink(summary, id);
   section.querySelector('.comparison-inner p').textContent = description;
   section.querySelector('.table-scroll').setAttribute('aria-label', title);
   const header = section.querySelector('thead tr');
@@ -911,13 +933,13 @@ function renderPairedMeasurements(ids) {
     ['90,000토큰 · 요청 전체', 'longTotal', '초'],
   ];
   const rows = metrics.map(([label, key, unit]) => [label, ...pairs.map(pair => pair[key].toFixed(2) + unit)]);
-  return renderComparison('한국어 소설 문맥 길이별 GPU 성능 비교',
+  return renderComparison('context-bench', '한국어 소설 문맥 길이별 GPU 성능 비교',
     '같은 한국어 소설과 지시문을 모델별 토크나이저로 잘라 입력 길이를 맞췄습니다. 요청 간 캐시 재사용 없이 256토큰 생성. DeepSeek는 MLX-Serve API, Flash-Next·라온·Bonsai는 로컬 런타임 실측입니다. 라온과 Bonsai의 디코딩 속도는 첫 토큰 이후 255토큰 기준입니다.',
     ids, rows);
 }
 
 function renderQwenInkling() {
-  return renderComparison('Qwen3.8 27B와 Inkling 비교',
+  return renderComparison('qwen-inkling', 'Qwen3.8 27B와 Inkling 비교',
     '이 Mac에서 남긴 기존 로그입니다. Qwen은 이미지 캡션, Inkling은 일반 응답과 헤르메스 소설 세션이어서 같은 작업의 속도 차이는 따로 확인해야 합니다.',
     ['qwen27', 'inkling'], [
       ['측정 환경', 'MLX-Serve · 8-bit', 'MLX-VLM · 로컬 API'],
@@ -944,6 +966,7 @@ function render() {
     section.querySelector('section').setAttribute('aria-labelledby', 'group-' + group);
     section.querySelector('h2').id = 'group-' + group;
     section.querySelector('h2').textContent = title;
+    addPermalink(section.querySelector('h2'), 'group-' + group);
     section.querySelector('.group-head p').textContent = description;
     const grid = section.querySelector('.card-grid');
     for (const entry of entries) grid.append(renderCard(entry));
@@ -954,17 +977,15 @@ function render() {
       const comparable = ['deepseek', 'raon-1-mini-mlx', 'qwen-flash-next', 'bonsai'].filter(id => ids.has(id));
       if (comparable.length >= 2) textGroup.append(renderPairedMeasurements(comparable));
       if (ids.has('deepseek') && ids.has('inkling')) {
-        const coding = renderComparison('JavaScript 버그 수정 · 예약 점유 시간',
+        const coding = renderComparison('coding-bench', 'JavaScript 버그 수정 · 예약 점유 시간',
           '2026.11.25~26 · 중첩 예약으로 점유 시간이 줄어드는 버그 1종. 같은 원본에서 모델별 3회, 매회 새 대화. 모델이 직접 코드를 수정하고 테스트를 실행했습니다. 첫 요청부터 완료 신호까지 측정했으며 서버 로딩과 독립 채점 시간은 제외했습니다.',
           ['deepseek', 'inkling', 'bonsai'], [["수정 성공", "3 / 3회", "3 / 3회", "3 / 3회"], ["공개 테스트 통과 수 (4개)", "4 · 4 · 4", "4 · 4 · 4", "4 · 4 · 4"], ["비공개 테스트 통과 수 (9개)", "9 · 9 · 9", "9 · 9 · 9", "9 · 9 · 9"], ["실행 순서별 시간", "3.14초 · 1.72초 · 1.71초", "14.67초 · 14.40초 · 14.41초", "2.29초 · 2.30초 · 2.30초"], ["완료 시간 중앙값", "1.72초", "14.41초", "2.30초"], ["실행 순서별 응답 턴", "4 · 4 · 4", "4 · 4 · 4", "4 · 4 · 4"]]);
-        coding.querySelector('details').id = 'coding-bench';
         textGroup.append(coding);
       }
       if (ids.has('raon-1-mini-mlx') && ids.has('deepseek')) {
-        const agents = renderComparison('한국어 에이전트 작업 성공률',
+        const agents = renderComparison('agent-bench', '한국어 에이전트 작업 성공률',
           '2026.11.25~26 · 모의 사이트 관리 5종 × 입력 3세트. 공통 JSON 도구, 추론 끄기, 작업당 최대 14턴. 실제 문서 상태와 게시 확인으로 자동 채점했습니다. 시간은 성공한 작업 기준입니다. Inkling은 최종 JSON 응답 파서 수정 후 재측정했습니다.',
           ['raon-1-mini-mlx', 'deepseek', 'inkling', 'bonsai'], [["전체 성공", "10 / 15", "14 / 15", "15 / 15", "11 / 15"], ["CPU 카드 제거", "3 / 3", "3 / 3", "3 / 3", "3 / 3"], ["최신 성공 기록 반영", "1 / 3", "2 / 3", "3 / 3", "2 / 3"], ["통계 보고서 작성", "0 / 3", "3 / 3", "3 / 3", "0 / 3"], ["503 복구 후 게시 확인", "3 / 3", "3 / 3", "3 / 3", "3 / 3"], ["조건 판단 및 상태 기록", "3 / 3", "3 / 3", "3 / 3", "3 / 3"], ["성공 작업 시간 중앙값", "1.20초", "2.59초", "22.03초", "3.86초"]]);
-        agents.querySelector('details').id = 'agent-bench';
         textGroup.append(agents);
       }
     }
@@ -979,21 +1000,36 @@ function selectCategory(value) {
   render();
 }
 
-function revealLinkedModel() {
-  const heading = document.getElementById(location.hash.slice(1));
-  const details = heading?.closest('.card')?.querySelector('details');
-  if (!details) return;
-  details.open = true;
-  heading.scrollIntoView({ block: 'start' });
+function revealLink() {
+  const id = location.hash.slice(1);
+  if (!id) return;
+  let target = document.getElementById(id);
+  if (!target) {
+    const group = Object.keys(labels).find(key => id === 'group-' + key)
+      ?? models.find(model => model.id === id)?.group
+      ?? (['qwen-inkling', 'context-bench', 'coding-bench', 'agent-bench'].includes(id) ? 'text' : null);
+    if (!group) return;
+    search.value = '';
+    selectCategory(category === 'all' ? 'all' : group);
+    target = document.getElementById(id);
+  }
+  const details = target.closest('details') ?? target.closest('.card')?.querySelector('details');
+  if (details) details.open = true;
+  target.scrollIntoView({ block: 'start' });
 }
 
+addPermalink(document.getElementById('metric-guide'), 'metric-guide');
+document.addEventListener('click', event => {
+  const link = event.target.closest('a[href^="#"]');
+  if (link && link.hash === location.hash && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) revealLink();
+});
 for (const button of buttons) {
   button.addEventListener('click', () => selectCategory(button.dataset.filter));
 }
 search.addEventListener('input', render);
-window.addEventListener('hashchange', revealLinkedModel);
+window.addEventListener('hashchange', revealLink);
 selectCategory(category);
-if (location.hash) requestAnimationFrame(revealLinkedModel);
+if (location.hash) requestAnimationFrame(revealLink);
 </script>
 </body>
 </html>
