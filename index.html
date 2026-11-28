@@ -43,7 +43,7 @@ h1 { font-size: clamp(2.4rem, 6.6vw, 4.85rem); font-weight: 820; line-height: 1.
 .specs .chip dd { font-size: 1.32rem; }
 main { padding-block: 2rem 4.2rem; }
 .controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 1.1rem; }
-.filters { display: flex; gap: .3rem; border: 1px solid var(--line); background: #e9edf6; padding: .25rem; border-radius: .65rem; }
+.filters { display: flex; flex-wrap: wrap; gap: .3rem; border: 1px solid var(--line); background: #e9edf6; padding: .25rem; border-radius: .65rem; }
 .filters button { border: 1px solid transparent; background: transparent; border-radius: .43rem; color: #44526e; padding: .4rem .95rem; cursor: pointer; font-weight: 650; white-space: nowrap; }
 .filters button[aria-pressed="true"] { background: var(--paper); color: #173789; border-color: #d9e1f1; box-shadow: 0 1px 2px #132c5711; }
 .jumps { display: flex; align-items: baseline; flex-wrap: wrap; gap: .35rem 1rem; margin-top: .85rem; font-size: .875rem; color: var(--muted); }
@@ -76,6 +76,11 @@ main { padding-block: 2rem 4.2rem; }
 .metric-value { line-height: 1; font-weight: 805; letter-spacing: -.065em; font-size: clamp(1.87rem, 4vw, 2.58rem); font-variant-numeric: tabular-nums; }
 .metric-note { font-size: .875rem; color: var(--muted); }
 .primary-context { min-height: 1.4rem; color: #46556e; margin: .33rem 0 0; font-size: .9rem; }
+.family-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr)); gap: .85rem; padding: 0; margin: 0; list-style: none; }
+.family-list li { padding: 1rem 1.2rem; }
+.family-list h3 { margin: 0; font-size: 1.05rem; }
+.family-list p { margin: .45rem 0 .7rem; }
+.family-list a { color: var(--accent); }
 .sample { margin: .85rem 0 0; }
 .sample figcaption { color: var(--muted); font-size: .875rem; }
 .sample video { display: block; width: 100%; margin-top: .28rem; }
@@ -151,6 +156,7 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
       <button type="button" data-filter="text" aria-pressed="false">텍스트</button>
       <button type="button" data-filter="image" aria-pressed="false">이미지</button>
       <button type="button" data-filter="video" aria-pressed="false">비디오</button>
+      <button type="button" data-filter="h3" aria-pressed="false">H3 패밀리</button>
       <button type="button" data-filter="other" aria-pressed="false">기타</button>
     </div>
     <label class="search">
@@ -162,7 +168,7 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
   <nav class="jumps" aria-label="섹션 바로가기">
     <span>바로가기</span>
     <a href="#group-text">텍스트</a><a href="#group-image">이미지</a>
-    <a href="#group-video">비디오</a><a href="#group-other">기타</a><a href="#metric-guide">측정 기준</a>
+    <a href="#group-video">비디오</a><a href="?section=h3">H3 패밀리</a><a href="#group-other">기타</a><a href="#metric-guide">측정 기준</a>
   </nav>
   <p id="results" class="sr-only" role="status" aria-live="polite"></p>
   <div id="models"></div>
@@ -936,12 +942,32 @@ const labels = {
   video: ['비디오 모델', '클립 한 편의 생성 시간'],
   other: ['기타', '음성 합성, 노래 생성, 소리 분리'],
 };
+// Each family entry links to its measured run in the existing benchmark catalog.
+const h3Family = [
+  ['비디오 모델', [
+    ['FL2VA · 처음·마지막 프레임 조건 생성', '로컬 Pruned FL2VA 체크포인트에 pi-H3 DWD 어댑터를 적용한 2스텝 영상 생성 기록입니다.', 'pi-h3'],
+    ['Ref2VA · 참조 기반 영상 편집', '원본 영상의 동작과 참고 사진 속 인물의 외형을 사용해 전신을 교체했습니다.', 'h3-character-swap'],
+    ['TriPRISM · H3 파생 체크포인트', '원본 클립과 참고 이미지를 생성하고, 카메라 이동·기둥 가림·두 사람 중 한 명 교체를 시험했습니다.', 'h3-character-swap'],
+  ]],
+  ['LoRA·어댑터', [
+    ['Character Swap LoRA v1.5', '원본의 인물을 참고 사진 속 인물로 교체합니다. Ref2VA와 TriPRISM에 각각 적용했습니다.', 'h3-character-swap'],
+    ['H3 Turbo 8-step LoRA', 'Ref2VA에 Character Swap LoRA와 함께 적용한 8스텝 가속 설정입니다. 측정 시간은 두 LoRA를 함께 쓴 결과입니다.', 'h3-character-swap'],
+    ['pi-H3 DWD 어댑터', 'Pruned H3를 2스텝으로 실행했습니다. 시드를 바꾼 반복 측정과 첫 실행 시간을 기록했습니다.', 'pi-h3'],
+  ]],
+  ['이미지 모델', [
+    ['MiniMax H3 Image', 'MLX와 ComfyUI에서 이미지 한 장을 생성하고 저장한 시간을 기록했습니다.', 'h3-image'],
+  ]],
+  ['H3 연계 실험', [
+    ['Wan 2.2 Animate · 전신 교체 비교', 'H3가 생성한 같은 원본 영상과 인물 사진으로 두 모델의 동작 재현을 비교했습니다.', 'wan-animate-swap'],
+    ['SAM-Audio · 효과음 제거', 'H3가 생성한 10초 영상에 효과음을 추가한 뒤 텍스트와 시간 표시로 분리했습니다.', 'sam-audio'],
+  ]],
+];
 const container = document.querySelector('#models');
 const search = document.querySelector('#search');
 const buttons = [...document.querySelectorAll('[data-filter]')];
 const maxRate = Math.max(70, ...models.map(model => model.bar ?? 0));
 const requestedCategory = new URLSearchParams(location.search).get('section');
-let category = Object.hasOwn(labels, requestedCategory) ? requestedCategory : 'all';
+let category = buttons.some(button => button.dataset.filter === requestedCategory) ? requestedCategory : 'all';
 
 function addPermalink(heading, id) {
   const link = document.createElement('a');
@@ -1064,8 +1090,63 @@ function renderQwenInkling() {
     ]);
 }
 
+function renderH3Family(query) {
+  let count = 0;
+  const records = new Set();
+  container.replaceChildren();
+  for (const [title, entries] of h3Family) {
+    const matches = entries.filter(([name, description]) =>
+      ('H3 패밀리 ' + title + ' ' + name + ' ' + description).toLocaleLowerCase().includes(query));
+    if (!matches.length) continue;
+    const section = document.createElement('section');
+    section.className = 'group';
+    section.dataset.group = 'video';
+    const head = document.createElement('div');
+    head.className = 'group-head';
+    const heading = document.createElement('h2');
+    heading.textContent = title;
+    head.append(heading);
+    const list = document.createElement('ul');
+    list.className = 'family-list';
+    for (const [name, description, id] of matches) {
+      records.add(id);
+      const item = document.createElement('li');
+      item.className = 'card';
+      const heading = document.createElement('h3');
+      heading.textContent = name;
+      const note = document.createElement('p');
+      note.textContent = description;
+      const link = document.createElement('a');
+      link.href = '#' + id;
+      link.textContent = '실측 기록 보기';
+      link.setAttribute('aria-label', name + ' 실측 기록 보기');
+      item.append(heading, note, link);
+      list.append(item);
+    }
+    section.append(head, list);
+    container.append(section);
+    count += matches.length;
+  }
+  if (records.size) {
+    const section = document.querySelector('#group-template').content.cloneNode(true);
+    section.querySelector('h2').textContent = '실측 기록과 결과물';
+    section.querySelector('.group-head p').remove();
+    section.querySelector('section').dataset.group = 'video';
+    for (const id of records) {
+      section.querySelector('.card-grid').append(renderCard(models.find(model => model.id === id)));
+    }
+    container.append(section);
+  }
+  document.querySelector('#empty').hidden = count > 0;
+  document.querySelector('#results').textContent = count + '개 H3 관련 항목';
+}
+
 function render() {
   const query = search.value.trim().toLocaleLowerCase();
+  if (category === 'h3') {
+    renderH3Family(query);
+    return;
+  }
   const visible = models.filter(model => {
     const matchesCategory = category === 'all' || model.group === category;
     const fields = [model.model, model.runtime, model.parameters, model.context, labels[model.group][0]];
@@ -1138,7 +1219,15 @@ document.addEventListener('click', event => {
   if (link && link.hash === location.hash && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey) revealLink();
 });
 for (const button of buttons) {
-  button.addEventListener('click', () => selectCategory(button.dataset.filter));
+  button.addEventListener('click', () => {
+    const next = button.dataset.filter;
+    const url = new URL(location.href);
+    url.hash = '';
+    if (next === 'all') url.searchParams.delete('section');
+    else url.searchParams.set('section', next);
+    if (location.protocol !== 'file:') history.replaceState(null, '', url);
+    selectCategory(next);
+  });
 }
 search.addEventListener('input', render);
 window.addEventListener('hashchange', revealLink);
