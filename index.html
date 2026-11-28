@@ -644,6 +644,120 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
     ]
   },
   {
+    "id": "h3-character-swap",
+    "group": "video",
+    "model": "MiniMax H3 · 전신 인물 교체",
+    "runtime": "ComfyUI · Ref2VA INT8 · Character Swap LoRA v1.5 + Turbo",
+    "parameters": "Pruned Ref2VA · 미집계",
+    "parameterNote": "교체에는 Ref2VA를, 원본 영상과 참고 이미지 생성에는 H3 계열 TriPRISM을 사용했습니다.",
+    "parameterSource": "https://huggingface.co/akatz-ai/MiniMax-H3-Character-Swap-LoRA",
+    "metric": "156.7",
+    "unit": "초 · 전신 교체",
+    "context": "384×512 · 124프레임 · 24fps · 8스텝. 손을 흔들고 옆으로 걷는 5.17초 장면에서 은발과 노란 작업복이 끝까지 유지됐습니다.",
+    "samples": [
+      {
+        "kind": "video",
+        "path": "video/character-swap/compare-final.mp4",
+        "label": "왼쪽부터 H3 원본, H3 Ref2VA, Wan 2.2 Animate"
+      },
+      {
+        "kind": "video",
+        "path": "video/character-swap/compare-pan-pillar.mp4",
+        "label": "카메라 수평 이동과 기둥 가림 · 왼쪽 원본, 오른쪽 H3"
+      },
+      {
+        "kind": "video",
+        "path": "video/character-swap/compare-two-people.mp4",
+        "label": "두 사람 중 오른쪽 한 명만 교체 · 왼쪽 원본, 오른쪽 H3"
+      },
+      {
+        "kind": "video",
+        "path": "video/character-swap/compare-h3-labeled.mp4",
+        "label": "왼쪽부터 원본, TriPRISM 교체본, 원본 배경을 합성한 결과"
+      }
+    ],
+    "rows": [
+      [
+        "원본 영상 생성",
+        "52.2초 · 384×512, 24fps, 124프레임. 빨간 상의를 입은 가상 인물 한 명이 손을 흔든 뒤 옆으로 걷습니다."
+      ],
+      [
+        "교체할 인물의 참고 이미지 생성",
+        "12.0초 · H3로 5프레임을 생성해 마지막 프레임을 사용했습니다."
+      ],
+      [
+        "Ref2VA 전신 교체",
+        "156.7초(2분 37초) · er_sde, 8스텝. 원본 오디오를 사용했습니다."
+      ],
+      [
+        "동작 오차 · 손목 / 발목",
+        "2.0 / 1.5픽셀 · Apple Vision이 같은 시점에서 검출한 원본과 결과의 좌표 간 거리 중앙값(신뢰도 0.5 이상)."
+      ],
+      [
+        "기존 TriPRISM + 같은 Swap LoRA",
+        "139.9초 · 손목 2.7픽셀, 발목 3.7픽셀. 원본 배경을 합성하자 인물 밖 평균 RGB 절대 차이가 20.03에서 2.48로 줄었습니다(0~255)."
+      ],
+      [
+        "수평 이동과 기둥 가림 · TriPRISM",
+        "137.6초 · 원본에 수평 이동과 기둥을 합성했습니다. 기둥의 이동량은 원본 38픽셀, 결과 39픽셀이었고 인물이 기둥 뒤로 지나갔습니다."
+      ],
+      [
+        "두 사람 중 한 명 선택 · TriPRISM",
+        "181.5초 · 두 인물을 나란히 합성한 장면에서 오른쪽 인물만 바뀌고 왼쪽의 파란 옷과 동작은 유지됐습니다."
+      ],
+      [
+        "측정 범위",
+        "2026.11.28 · 조건별 1회. 시간은 각 ComfyUI 작업의 시작부터 출력 저장까지입니다. 빠른 춤, 손가락 세부 동작, 인물 간 교차, 장시간 영상은 추가 검증이 필요합니다."
+      ]
+    ]
+  },
+  {
+    "id": "wan-animate-swap",
+    "group": "video",
+    "model": "Wan 2.2 Animate · 전신 인물 교체",
+    "runtime": "ComfyUI · Animate-14B BF16 · Relight + LightX2V LoRA",
+    "parameters": "14B 모델 계열",
+    "parameterNote": "Wan 제작사의 Animate-14B 모델명을 따랐습니다.",
+    "parameterSource": "https://huggingface.co/Wan-AI/Wan2.2-Animate-14B",
+    "metric": "118.2",
+    "unit": "초 · 전신 교체",
+    "context": "384×512 · 81프레임 · 16fps · 6스텝. H3와 같은 원본과 인물 사진으로 노란 작업복, 손 흔들기, 옆걸음을 재현했습니다.",
+    "samples": [
+      {
+        "kind": "video",
+        "path": "video/character-swap/wan-retry.mp4",
+        "label": "교체 성공 · 블록 마스크와 검은 배경 입력, 6스텝"
+      },
+      {
+        "kind": "video",
+        "path": "video/character-swap/wan.mp4",
+        "label": "첫 실행 · 얼굴과 의상에 회색 실루엣이 남은 결과"
+      }
+    ],
+    "rows": [
+      [
+        "공통 입력",
+        "H3로 생성한 원본 영상(52.2초 소요)과 참고 이미지(12.0초 소요)를 재사용했습니다. Apple Vision으로 포즈와 인물 마스크를 추출했습니다."
+      ],
+      [
+        "교체 성공",
+        "118.2초(1분 58초) · 약 5.06초 분량. 인물 영역을 검게 지운 배경, 32픽셀 블록 마스크, LightX2V LoRA, Euler 6스텝을 사용했습니다."
+      ],
+      [
+        "동작 오차 · 손목 / 발목",
+        "5.1 / 9.0픽셀 · 16fps 결과를 24fps 원본의 가장 가까운 시점에 맞춰 H3와 같은 방법으로 측정했습니다."
+      ],
+      [
+        "첫 실행 · 교체 실패",
+        "774.3초(12분 54초) · 24fps, 121프레임, 20스텝. 회색으로 채운 인물 영역이 실루엣으로 남았습니다."
+      ],
+      [
+        "시간 비교 조건",
+        "2026.11.28 · 조건별 1회. ComfyUI 작업 시간이며 입력 전처리는 별도입니다. H3와 출력 프레임 수, FPS, 스텝 수가 다릅니다."
+      ]
+    ]
+  },
+  {
     "id": "longcat",
     "parameters": "약 15.85B · DiT",
     "parameterNote": "실측에 쓴 BF16 체크포인트의 DiT 가중치와 편향을 집계했습니다.",
