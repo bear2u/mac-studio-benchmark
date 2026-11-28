@@ -81,6 +81,8 @@ main { padding-block: 2rem 4.2rem; }
 .family-list h3 { margin: 0; font-size: 1.05rem; }
 .family-list p { margin: .45rem 0 .7rem; }
 .family-list a { color: var(--accent); }
+#swap-result h4 { margin: 1rem 0 .25rem; }
+#swap-result .sample { margin-top: 0; }
 .sample { margin: .85rem 0 0; }
 .sample figcaption { color: var(--muted); font-size: .875rem; }
 .sample video { display: block; width: 100%; margin-top: .28rem; }
@@ -170,14 +172,6 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
     <a href="#group-text">텍스트</a><a href="#group-image">이미지</a>
     <a href="#group-video">비디오</a><a href="?section=h3">H3 패밀리</a><a href="#group-other">기타</a><a href="#metric-guide">측정 기준</a>
   </nav>
-  <section id="swap-result" class="group" data-group="video" aria-labelledby="swap-result-title" hidden>
-    <div class="group-head"><h2 id="swap-result-title">스왑 최종 결과 영상</h2></div>
-    <figure class="sample">
-      <figcaption>왼쪽부터 원본, H3 Ref2VA 교체본, Wan 2.2 Animate 교체본</figcaption>
-      <video controls playsinline preload="none" aria-labelledby="swap-result-title" poster="video/character-swap/compare-final.jpg" src="video/character-swap/compare-final.mp4"></video>
-    </figure>
-    <a href="video/character-swap/compare-final.mp4">compare-final.mp4 직접 열기</a>
-  </section>
   <p id="results" class="sr-only" role="status" aria-live="polite"></p>
   <div id="models"></div>
   <template id="comparison-template">
@@ -207,6 +201,16 @@ summary { cursor: pointer; font-size: .875rem; font-weight: 650; color: #3e5070;
   <section class="group">
     <div class="group-head"><h2></h2><p></p></div>
     <div class="card-grid"></div>
+  </section>
+</template>
+<template id="swap-result-template">
+  <section id="swap-result" aria-labelledby="swap-result-title">
+    <h4 id="swap-result-title">스왑 최종 결과 영상</h4>
+    <figure class="sample">
+      <figcaption>왼쪽부터 원본, H3 Ref2VA 교체본, Wan 2.2 Animate 교체본</figcaption>
+      <video controls playsinline preload="none" aria-labelledby="swap-result-title" poster="video/character-swap/compare-final.jpg" src="video/character-swap/compare-final.mp4"></video>
+    </figure>
+    <a href="video/character-swap/compare-final.mp4">compare-final.mp4 직접 열기</a>
   </section>
 </template>
 <template id="card-template">
@@ -981,7 +985,7 @@ function addPermalink(heading, id) {
   heading.append(link);
 }
 
-function renderCard(model) {
+function renderCard(model, swapHostId) {
   const card = document.querySelector('#card-template').content.cloneNode(true);
   const heading = card.querySelector('h3');
   heading.id = model.id;
@@ -999,7 +1003,9 @@ function renderCard(model) {
   card.querySelector('.metric-note').textContent = model.unit;
   card.querySelector('.primary-context').textContent = model.context;
   const samples = card.querySelector('.samples');
-  if (model.id === 'h3-character-swap' || model.id === 'wan-animate-swap') {
+  if (model.id === swapHostId) {
+    samples.append(document.querySelector('#swap-result-template').content.cloneNode(true));
+  } else if (model.id === 'wan-animate-swap') {
     const link = document.createElement('a');
     link.href = '#swap-result';
     link.textContent = '스왑 최종 결과 영상 보기';
@@ -1136,14 +1142,14 @@ function renderH3Family(query) {
     container.append(section);
     count += matches.length;
   }
-  document.querySelector('#swap-result').hidden = !records.has('h3-character-swap') && !records.has('wan-animate-swap');
+  const swapHostId = records.has('h3-character-swap') ? 'h3-character-swap' : 'wan-animate-swap';
   if (records.size) {
     const section = document.querySelector('#group-template').content.cloneNode(true);
     section.querySelector('h2').textContent = '실측 기록과 결과물';
     section.querySelector('.group-head p').remove();
     section.querySelector('section').dataset.group = 'video';
     for (const id of records) {
-      section.querySelector('.card-grid').append(renderCard(models.find(model => model.id === id)));
+      section.querySelector('.card-grid').append(renderCard(models.find(model => model.id === id), swapHostId));
     }
     container.append(section);
   }
@@ -1163,7 +1169,7 @@ function render() {
     return matchesCategory && fields.some(value => value.toLocaleLowerCase().includes(query));
   });
   container.replaceChildren();
-  document.querySelector('#swap-result').hidden = !visible.some(model => model.id === 'h3-character-swap' || model.id === 'wan-animate-swap');
+  const swapHostId = visible.some(model => model.id === 'h3-character-swap') ? 'h3-character-swap' : 'wan-animate-swap';
   for (const [group, [title, description]] of Object.entries(labels)) {
     const entries = visible.filter(model => model.group === group);
     if (!entries.length) continue;
@@ -1175,7 +1181,7 @@ function render() {
     addPermalink(section.querySelector('h2'), 'group-' + group);
     section.querySelector('.group-head p').textContent = description;
     const grid = section.querySelector('.card-grid');
-    for (const entry of entries) grid.append(renderCard(entry));
+    for (const entry of entries) grid.append(renderCard(entry, swapHostId));
     if (group === 'text') {
       const ids = new Set(entries.map(entry => entry.id));
       const textGroup = section.querySelector('section');
@@ -1210,12 +1216,9 @@ function revealLink() {
   const id = location.hash.slice(1);
   if (!id) return;
   let target = document.getElementById(id);
-  if (id === 'swap-result' && target.hidden) {
-    search.value = '';
-    selectCategory('h3');
-  }
   if (!target) {
-    const group = Object.keys(labels).find(key => id === 'group-' + key)
+    const group = (id === 'swap-result' ? 'h3' : null)
+      ?? Object.keys(labels).find(key => id === 'group-' + key)
       ?? models.find(model => model.id === id)?.group
       ?? (['qwen-inkling', 'context-bench', 'coding-bench', 'agent-bench'].includes(id) ? 'text' : null);
     if (!group) return;
